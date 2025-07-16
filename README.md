@@ -18,14 +18,14 @@ IS 'This is the main database for my project';
 -- Create a secure app role
 CREATE ROLE "username" WITH
 LOGIN
-PASSWORD 'your_secure_password' -- 🔐 Replace with your actual password
+PASSWORD 'your_secure_password'
 NOSUPERUSER
 NOCREATEDB
 NOCREATEROLE
 INHERIT
 NOREPLICATION
 NOBYPASSRLS;
-
+-- replace username with actual username
 -- Grant full access to the database
 GRANT ALL PRIVILEGES ON DATABASE "dealmaker" TO "username";
 

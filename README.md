@@ -1,36 +1,39 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+-- Drop and recreate the database
+DROP DATABASE IF EXISTS "dealmaker";
 
-## Getting Started
+CREATE DATABASE "dealmaker"
+WITH
+OWNER = postgres
+ENCODING = 'UTF8'
+LC_COLLATE = 'English_United States.1252'
+LC_CTYPE = 'English_United States.1252'
+LOCALE_PROVIDER = 'libc'
+TABLESPACE = pg_default
+CONNECTION LIMIT = -1
+IS_TEMPLATE = false;
 
-First, run the development server:
+COMMENT ON DATABASE "dealmaker"
+IS 'This is the main database for my project';
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+-- Create a secure app role
+CREATE ROLE "username" WITH
+LOGIN
+PASSWORD 'your_secure_password' -- 🔐 Replace with your actual password
+NOSUPERUSER
+NOCREATEDB
+NOCREATEROLE
+INHERIT
+NOREPLICATION
+NOBYPASSRLS;
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+-- Grant full access to the database
+GRANT ALL PRIVILEGES ON DATABASE "dealmaker" TO "username";
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+-- Connect to the 'dealmaker' database as postgres and run the following:
+GRANT USAGE, CREATE ON SCHEMA public TO "username";
+GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA public TO "username";
+GRANT USAGE, SELECT ON ALL SEQUENCES IN SCHEMA public TO "username";
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
-
-## Learn More
-
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+-- Ensure future tables are accessible
+ALTER DEFAULT PRIVILEGES IN SCHEMA public
+GRANT ALL ON TABLES TO "username";

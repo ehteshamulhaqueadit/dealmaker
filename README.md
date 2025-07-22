@@ -18,7 +18,7 @@ IS 'This is the main database for my project';
 -- Create a secure app role
 CREATE ROLE "username" WITH
 LOGIN
-PASSWORD 'your_secure_password' -- 🔐 Replace with your actual password
+PASSWORD 'your_secure_password' -- Replace with your actual password
 NOSUPERUSER
 NOCREATEDB
 NOCREATEROLE

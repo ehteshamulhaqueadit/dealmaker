@@ -2,9 +2,8 @@ import bcrypt from "bcrypt";
 import { userModel } from "../models/authModel.js"; // adjust import path if needed
 import { generateToken } from "../../../utils/jwt.js"; // adjust path
 
-export const login = async (req, res) => {
+export const loginController = async (req, res) => {
   const { username, password } = req.body;
-
   if (!username || !password) {
     return res
       .status(400)

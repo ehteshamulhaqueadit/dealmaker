@@ -62,16 +62,4 @@ const tempUserModel = db_connection.define(
   { timestamps: true }
 );
 
-const blacklistedTokenModel = db_connection.define(
-  "blacklist_token",
-  {
-    tokenUUID: {
-      type: DataTypes.STRING,
-      allowNull: false,
-      primaryKey: true,
-    },
-  },
-  { timestamps: true }
-);
-
-export { userModel, tempUserModel, blacklistedTokenModel };
+export { userModel, tempUserModel };

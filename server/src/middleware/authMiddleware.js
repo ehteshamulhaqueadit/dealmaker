@@ -1,5 +1,5 @@
 import jwt from "jsonwebtoken";
-import { blacklistedTokenModel } from "../models/authModel.js"; // adjust path as needed
+import { blacklistedTokenModel } from "../features/auth/models/authModel.js"; // adjust path as needed
 
 export const authentication = async (req, res, next) => {
   const authHeader = req.headers.authorization;
@@ -12,15 +12,6 @@ export const authentication = async (req, res, next) => {
 
   try {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
-
-    // Check if jti is blacklisted
-    const isBlacklisted = await blacklistedTokenModel.findOne({
-      where: { tokenUUID: decoded.jti },
-    });
-
-    if (isBlacklisted) {
-      return res.status(403).json({ message: "Token has been revoked" });
-    }
 
     req.user = decoded; // Attach decoded user data
     next();

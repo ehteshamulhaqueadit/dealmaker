@@ -1,5 +1,6 @@
 import express from "express";
 import authRouter from "./features/auth/routes/authRoute.js";
+import userProfileRouter from "./features/auth/routes/userProfileRoute.js";
 import syncModels from "./syncModels.js";
 // import cors from "cors";
 import dotenv from "dotenv";
@@ -19,6 +20,7 @@ app.use(
 
 app.use(express.json());
 app.use("/api/auth", authRouter);
+app.use("/api/user-profile", userProfileRouter);
 
 // Sync models before starting server
 (async () => {

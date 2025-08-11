@@ -6,8 +6,8 @@ export default function Navbar({ onAuthButtonClick }) {
 
   const navItems = [
     { name: "Home", href: "/" },
-    { name: "Features", href: "/features" },
-    { name: "Pricing", href: "/pricing" },
+    { name: "Deals", href: "/deals" },
+    { name: "Profile", href: "/profile" },
     { name: "About", href: "/about" },
   ];
 

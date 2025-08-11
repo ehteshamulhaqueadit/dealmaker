@@ -1,11 +1,15 @@
-import React, { useState } from "react";
-import { motion } from "framer-motion";
+import React, { useState, useRef } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import { login } from "../api/auth";
+import PasswordResetDialog from "./PasswordResetDialog";
+import Cookies from "js-cookie"; // Import js-cookie
 
-function LoginForm() {
+function LoginForm({ onSuccess }) {
   const [form, setForm] = useState({ username: "", password: "" });
   const [error, setError] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showResetDialog, setShowResetDialog] = useState(false);
+  const forgotPasswordRef = useRef(null);
 
   const handleChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value });
@@ -17,8 +21,17 @@ function LoginForm() {
     setIsSubmitting(true);
 
     try {
-      await login(form);
-      // Handle successful login (redirect, etc.)
+      // Perform the login API request
+      const response = await login(form);
+      console.log("Login response:", response);
+      // If successful, store the token in a cookie
+      Cookies.set("auth_token", response.token, {
+        expires: 7,
+        secure: true,
+      }); // Cookie will expire in 7 days
+
+      // Call onSuccess to close the modal
+      onSuccess();
     } catch (err) {
       setError(err.response?.data?.message || "Login failed");
     } finally {
@@ -31,6 +44,7 @@ function LoginForm() {
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       transition={{ duration: 0.3 }}
+      className="relative"
     >
       <div className="text-center mb-6">
         <h2 className="text-2xl font-bold text-gray-800">Welcome Back</h2>
@@ -86,9 +100,14 @@ function LoginForm() {
               Remember me
             </label>
           </div>
-          <a href="#" className="text-sm text-indigo-600 hover:text-indigo-500">
+          <button
+            type="button"
+            ref={forgotPasswordRef}
+            onClick={() => setShowResetDialog(!showResetDialog)}
+            className="text-sm text-indigo-600 hover:text-indigo-500 focus:outline-none"
+          >
             Forgot password?
-          </a>
+          </button>
         </div>
 
         <motion.button
@@ -112,6 +131,15 @@ function LoginForm() {
           {error}
         </motion.div>
       )}
+
+      <AnimatePresence>
+        {showResetDialog && (
+          <PasswordResetDialog
+            onClose={() => setShowResetDialog(false)}
+            anchorRef={forgotPasswordRef}
+          />
+        )}
+      </AnimatePresence>
     </motion.div>
   );
 }

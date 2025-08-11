@@ -1,5 +1,4 @@
-import jwt from "jsonwebtoken";
-import { blacklistedTokenModel } from "../features/auth/models/authModel.js"; // adjust path as needed
+import jwt from "jsonwebtoken"; // adjust path as needed
 
 export const authentication = async (req, res, next) => {
   const authHeader = req.headers.authorization;

@@ -13,10 +13,6 @@ export const registerController = async (req, res) => {
     return res.status(400).json({ message: "All fields are required." });
   }
 
-  if (!email.endsWith("@g.bracu.ac.bd")) {
-    return res.status(400).json({ message: "Invalid BRACU email domain." });
-  }
-
   // Start a transaction
   const transaction = await db_connection.transaction();
 

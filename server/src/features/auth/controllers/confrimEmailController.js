@@ -33,7 +33,7 @@ export const confirmEmailController = async (req, res) => {
 
     await transaction.commit();
 
-    return res.json({ message: "Email has been verified" });
+    return res.status(200).json({ message: "Email has been verified" });
   } catch (error) {
     console.error(error);
     await transaction.rollback();

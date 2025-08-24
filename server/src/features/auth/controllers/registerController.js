@@ -74,7 +74,18 @@ export const registerController = async (req, res) => {
     // Commit transaction after successful email
     await transaction.commit();
 
-    res.status(201).json({
+    console.log("Response sent:", {
+      message:
+        "User registered successfully. Please check your email to confirm.",
+      user: {
+        id: newUser.id,
+        username: newUser.username,
+        email: newUser.email,
+        full_name: newUser.full_name,
+      },
+    });
+
+    res.status(200).json({
       message:
         "User registered successfully. Please check your email to confirm.",
       user: {

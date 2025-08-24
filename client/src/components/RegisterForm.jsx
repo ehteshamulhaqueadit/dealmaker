@@ -10,6 +10,7 @@ function RegisterForm() {
     full_name: "",
   });
   const [error, setError] = useState("");
+  const [success, setSuccess] = useState(""); // Added state for success message
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleChange = (e) => {
@@ -19,11 +20,16 @@ function RegisterForm() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
+    setSuccess(""); // Clear success message on new submission
     setIsSubmitting(true);
 
     try {
-      await register(form);
-      // Handle successful registration
+      const response = await register(form);
+      if (response.message) {
+        setSuccess(response.message);
+      } else {
+        setSuccess("Registration successful!");
+      }
     } catch (err) {
       setError(err.response?.data?.message || "Registration failed");
     } finally {
@@ -134,6 +140,16 @@ function RegisterForm() {
           className="mt-4 p-3 bg-red-50 text-red-600 text-sm rounded-lg"
         >
           {error}
+        </motion.div>
+      )}
+
+      {success && (
+        <motion.div
+          initial={{ opacity: 0, y: -10 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="mt-4 p-3 bg-green-50 text-green-600 text-sm rounded-lg"
+        >
+          {success}
         </motion.div>
       )}
     </motion.div>

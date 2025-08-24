@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { Link } from "react-router-dom";
 
 export default function Navbar({ onAuthButtonClick }) {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -23,13 +24,13 @@ export default function Navbar({ onAuthButtonClick }) {
           {/* Center - Desktop Navigation */}
           <div className="hidden md:flex items-center space-x-8">
             {navItems.map((item) => (
-              <a
+              <Link
                 key={item.name}
-                href={item.href}
+                to={item.href}
                 className="text-gray-700 hover:text-indigo-600 px-3 py-2 text-sm font-medium transition-colors"
               >
                 {item.name}
-              </a>
+              </Link>
             ))}
           </div>
 
@@ -90,13 +91,13 @@ export default function Navbar({ onAuthButtonClick }) {
           >
             <div className="px-2 pt-2 pb-3 space-y-1 sm:px-3">
               {navItems.map((item) => (
-                <a
+                <Link
                   key={item.name}
-                  href={item.href}
+                  to={item.href}
                   className="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-indigo-600 hover:bg-gray-50"
                 >
                   {item.name}
-                </a>
+                </Link>
               ))}
             </div>
           </motion.div>

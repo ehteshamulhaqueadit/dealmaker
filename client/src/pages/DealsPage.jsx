@@ -180,6 +180,12 @@ const DealsPage = () => {
             <p className="text-gray-700 mb-2">{deal.description}</p>
             <p className="text-gray-500 mb-2">Budget: {deal.budget}</p>
             <p className="text-gray-500 mb-4">Timeline: {deal.timeline}</p>
+            <p className="text-gray-500 mb-2">Created by: {deal.creatorId}</p>
+            <p className="text-gray-500 mb-4">
+              {deal.dealer_joined
+                ? `Joined by: ${deal.dealer_joined}`
+                : "No one has joined yet"}
+            </p>
             {deal.creatorId === username ? (
               <button
                 onClick={() => handleDeleteDeal(deal.id)}
@@ -194,14 +200,14 @@ const DealsPage = () => {
               >
                 Leave Deal
               </button>
-            ) : (
+            ) : !deal.dealer_joined ? (
               <button
                 onClick={() => handleJoinDeal(deal.id)}
                 className="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600"
               >
                 Join Deal
               </button>
-            )}
+            ) : null}
           </div>
         ))}
       </div>

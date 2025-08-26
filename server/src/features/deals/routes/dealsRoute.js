@@ -7,17 +7,20 @@ import { getMyDealsController } from "../controllers/getMyDealsController.js";
 import { getDealsController } from "../controllers/getDealsController.js";
 
 import { joinDealAsDealerController } from "../controllers/joinDealAsDealerController.js";
+import { leaveDealAsDealerController } from "../controllers/leaveDealAsDealerController.js";
 
 const dealRouter = Router();
 
 dealRouter.use(authentication);
 
-dealRouter.get("/all/:keyword", getDealsController);
+dealRouter.get("/all", (req, res) => getDealsController(req, res)); // Fetch all deals
+dealRouter.get("/all/:keyword", getDealsController); // Fetch deals by keyword
 dealRouter.get("/my-deals", getMyDealsController);
 
 dealRouter.post("/create-deal", createDealController);
 dealRouter.delete("/delete-deal/:id", deleteDealController);
 
-dealRouter.post("/join-deal-as-dealer", joinDealAsDealerController);
+dealRouter.put("/join-deal-as-dealer/:id", joinDealAsDealerController);
+dealRouter.put("/leave-deal-as-dealer/:id", leaveDealAsDealerController);
 
 export default dealRouter;

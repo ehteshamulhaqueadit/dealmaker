@@ -6,6 +6,7 @@ import LoginForm from "./components/LoginForm";
 import RegisterForm from "./components/RegisterForm";
 import VerifyEmailPage from "./pages/VerifyEmailPage";
 import UserProfile from "./pages/UserProfile";
+import DealsPage from "./pages/DealsPage";
 
 export default function App() {
   const [authModal, setAuthModal] = useState({
@@ -34,6 +35,7 @@ export default function App() {
           <Route path="/login" element={<LoginForm />} />
           <Route path="/register" element={<RegisterForm />} />
           <Route path="/user-profile" element={<UserProfile />} />
+          <Route path="/deals" element={<DealsPage />} />
         </Routes>
       </main>
       <AnimatePresence>

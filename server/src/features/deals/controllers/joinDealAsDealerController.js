@@ -1,7 +1,7 @@
 import dealModel from "../models/dealsModel.js";
 
 export const joinDealAsDealerController = async (req, res) => {
-  const dealId = req.body;
+  const dealId = req.params.id;
   const username = req.user.username;
   try {
     const deal = await dealModel.findByPk(dealId);

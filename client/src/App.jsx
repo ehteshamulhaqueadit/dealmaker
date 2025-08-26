@@ -5,7 +5,7 @@ import Navbar from "./components/Navbar";
 import LoginForm from "./components/LoginForm";
 import RegisterForm from "./components/RegisterForm";
 import VerifyEmailPage from "./pages/VerifyEmailPage";
-import UserProfile from "./pages/UserProfile";
+import Profile from "./pages/Profile"; // Updated import for Profile
 import DealsPage from "./pages/DealsPage";
 import ResetPassword from "./pages/ResetPassword"; // Import ResetPassword page
 
@@ -35,7 +35,8 @@ export default function App() {
           <Route path="/api/auth/register/:key" element={<VerifyEmailPage />} />
           <Route path="/login" element={<LoginForm />} />
           <Route path="/register" element={<RegisterForm />} />
-          <Route path="/user-profile" element={<UserProfile />} />
+          <Route path="/profile" element={<Profile />} />{" "}
+          {/* Updated route for Profile */}
           <Route path="/deals" element={<DealsPage />} />
           <Route
             path="/api/auth/reset_password/:username/:token"

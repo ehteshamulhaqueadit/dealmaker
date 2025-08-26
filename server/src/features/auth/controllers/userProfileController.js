@@ -41,14 +41,18 @@ export const updateUserProfile = async (req, res) => {
   try {
     const username = req.user.username;
     const { full_name, date_of_birth, address, occupation } = req.body;
-
+    console.log(full_name, date_of_birth, address, occupation);
     // Update fields in userModel (excluding username and email)
     await userModel.update({ full_name }, { where: { username } });
 
-    await userDataModel.update(
-      { date_of_birth, address, occupation },
-      { where: { username } }
-    );
+    const [userData, created] = await userDataModel.findOrCreate({
+      where: { username },
+      defaults: { date_of_birth, address, occupation },
+    });
+
+    if (!created) {
+      await userData.update({ date_of_birth, address, occupation });
+    }
 
     res.status(200).json({
       message: "Profile updated successfully",

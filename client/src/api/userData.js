@@ -11,15 +11,3 @@ export async function updateUserProfile(data) {
   const response = await axios.post("/user-profile", data); // Changed PUT to POST
   return response.data;
 }
-
-import axiosInstance from "./axiosInstance";
-
-export const fetchUserProfile = async () => {
-  try {
-    const response = await axiosInstance.get("/api/user-profile");
-    return response.data;
-  } catch (error) {
-    console.error("Failed to fetch user profile", error);
-    throw error;
-  }
-};

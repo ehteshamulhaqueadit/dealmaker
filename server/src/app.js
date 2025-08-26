@@ -5,7 +5,7 @@ import syncModels from "./syncModels.js";
 
 import profilesRouter from "./features/twoProfiles/routes/profilesRoutes.js";
 import dealRouter from "./features/deals/routes/dealsRoute.js";
-
+import biddingRouter from "./features/bidding/routes/biddingRoute.js";
 // import cors from "cors";
 import dotenv from "dotenv";
 import cors from "cors";
@@ -31,6 +31,8 @@ app.use("/api/user-profile", userProfileRouter);
 app.use("/api/profiles", profilesRouter);
 
 app.use("/api/deals", dealRouter);
+app.use("/api/bids", biddingRouter);
+
 // Sync models before starting server
 (async () => {
   try {

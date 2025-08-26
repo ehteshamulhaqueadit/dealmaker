@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
-import { getUserProfile, updateUserProfile } from "../api/userData";
+import { getUserProfile, updateUserProfile } from "../api/userData.js";
 
-const UserProfile = () => {
+const Profile = () => {
   const [profile, setProfile] = useState({});
   const [formData, setFormData] = useState({});
   const [isEditing, setIsEditing] = useState(false);
@@ -36,7 +36,7 @@ const UserProfile = () => {
       const payload = {
         full_name: formData.full_name,
         password_reset_token: formData.password_reset_token || null,
-        date_of_birth: formData.date_of_birth,
+        date_of_birth: formData.date_of_birth || null, // Ensure null is sent for empty date
         address: formData.address,
         occupation: formData.occupation,
       };
@@ -190,4 +190,4 @@ const UserProfile = () => {
   );
 };
 
-export default UserProfile;
+export default Profile;

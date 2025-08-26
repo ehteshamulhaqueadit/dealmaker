@@ -5,10 +5,18 @@ import dotenv from "dotenv";
 dotenv.config();
 
 async function change_password(new_password, username) {
-  const transaction = await db_connection.transaction();
+  if (!new_password) {
+    throw new Error("New password is required");
+  }
+
   const saltRounds = parseInt(process.env.SALTROUNDS, 10);
+  if (isNaN(saltRounds)) {
+    throw new Error("Invalid SALTROUNDS value in environment variables");
+  }
+
+  const transaction = await db_connection.transaction();
   const password_hash = await bcrypt.hash(new_password, saltRounds);
-  console.log(password_hash);
+
   try {
     await userModel.update(
       { password_reset_token: null, password_hash },
@@ -26,17 +34,18 @@ async function change_password(new_password, username) {
 export async function resetPasswordWithToken(req, res) {
   const token = req.params.token;
   const username = req.params.username;
-  const { new_password } = req.body;
+  const { newPassword } = req.body;
 
   const password_token = await userModel.findByPk(username, {
     attributes: ["password_reset_token"],
   });
+
   if (password_token) {
     if (
       token == password_token.password_reset_token &&
-      password_token.password_reset_token != null
+      password_token.password_reset_token !== null
     ) {
-      const result = await change_password(new_password, username);
+      const result = await change_password(newPassword, username);
       result
         ? res
             .status(200)

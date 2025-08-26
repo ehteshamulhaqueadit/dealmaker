@@ -63,7 +63,10 @@ const DealsPage = () => {
     e.preventDefault();
     try {
       const createdDeal = await createDeal(newDeal);
-      setDeals([createdDeal, ...deals]);
+      setDeals((prevDeals) => [
+        { ...createdDeal, creatorId: username },
+        ...prevDeals,
+      ]);
       setNewDeal({ title: "", description: "", budget: "", timeline: "" });
       setMessage("Deal created successfully!");
       setIsCreateModalOpen(false);
@@ -86,6 +89,16 @@ const DealsPage = () => {
   const handleJoinDeal = async (dealId) => {
     try {
       await joinDealAsDealer(dealId);
+      setDeals((prevDeals) =>
+        prevDeals.map((deal) =>
+          deal.id === dealId ? { ...deal, dealer_joined: username } : deal
+        )
+      );
+      setMyDeals((prevMyDeals) =>
+        prevMyDeals.map((deal) =>
+          deal.id === dealId ? { ...deal, dealer_joined: username } : deal
+        )
+      );
       setMessage("Joined deal successfully!");
     } catch (error) {
       console.error("Failed to join deal", error);
@@ -96,6 +109,16 @@ const DealsPage = () => {
   const handleLeaveDeal = async (dealId) => {
     try {
       await leaveDealAsDealer(dealId);
+      setDeals((prevDeals) =>
+        prevDeals.map((deal) =>
+          deal.id === dealId ? { ...deal, dealer_joined: null } : deal
+        )
+      );
+      setMyDeals((prevMyDeals) =>
+        prevMyDeals.map((deal) =>
+          deal.id === dealId ? { ...deal, dealer_joined: null } : deal
+        )
+      );
       setMessage("Left deal successfully!");
     } catch (error) {
       console.error("Failed to leave deal", error);
@@ -106,7 +129,10 @@ const DealsPage = () => {
   const handleDeleteDeal = async (dealId) => {
     try {
       await deleteDeal(dealId);
-      setDeals(deals.filter((deal) => deal.id !== dealId));
+      setDeals((prevDeals) => prevDeals.filter((deal) => deal.id !== dealId));
+      setMyDeals((prevMyDeals) =>
+        prevMyDeals.filter((deal) => deal.id !== dealId)
+      );
       setMessage("Deal deleted successfully!");
     } catch (error) {
       console.error("Failed to delete deal", error);
@@ -160,6 +186,13 @@ const DealsPage = () => {
                 className="bg-red-500 text-white px-4 py-2 rounded-lg hover:bg-red-600"
               >
                 Delete Deal
+              </button>
+            ) : deal.dealer_joined === username ? (
+              <button
+                onClick={() => handleLeaveDeal(deal.id)}
+                className="bg-yellow-500 text-white px-4 py-2 rounded-lg hover:bg-yellow-600"
+              >
+                Leave Deal
               </button>
             ) : (
               <button
@@ -259,12 +292,18 @@ const DealsPage = () => {
             onClick={() => setIsMyDealsModalOpen(false)}
           >
             <motion.div
-              className="bg-white p-6 rounded-lg shadow-lg w-full max-w-md"
+              className="bg-white p-6 rounded-lg shadow-lg w-full max-w-md h-[80vh] overflow-y-auto relative"
               initial={{ scale: 0.9 }}
               animate={{ scale: 1 }}
               exit={{ scale: 0.9 }}
               onClick={(e) => e.stopPropagation()}
             >
+              <button
+                onClick={() => setIsMyDealsModalOpen(false)}
+                className="absolute top-4 right-4 bg-gray-300 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-400"
+              >
+                Close
+              </button>
               <h2 className="text-2xl font-bold mb-4">My Deals</h2>
               <div className="space-y-4">
                 {myDeals.map((deal) => (
@@ -274,29 +313,24 @@ const DealsPage = () => {
                     <p className="text-gray-500">Budget: {deal.budget}</p>
                     <p className="text-gray-500">Timeline: {deal.timeline}</p>
                     <div className="flex justify-end mt-2">
-                      <button
-                        onClick={() => handleLeaveDeal(deal.id)}
-                        className="bg-yellow-500 text-white px-4 py-2 rounded-lg hover:bg-yellow-600 mr-2"
-                      >
-                        Leave Deal
-                      </button>
-                      <button
-                        onClick={() => handleDeleteDeal(deal.id)}
-                        className="bg-red-500 text-white px-4 py-2 rounded-lg hover:bg-red-600"
-                      >
-                        Delete Deal
-                      </button>
+                      {deal.dealer_creator === username ? (
+                        <button
+                          onClick={() => handleDeleteDeal(deal.id)}
+                          className="bg-red-500 text-white px-4 py-2 rounded-lg hover:bg-red-600"
+                        >
+                          Delete Deal
+                        </button>
+                      ) : deal.dealer_joined === username ? (
+                        <button
+                          onClick={() => handleLeaveDeal(deal.id)}
+                          className="bg-yellow-500 text-white px-4 py-2 rounded-lg hover:bg-yellow-600"
+                        >
+                          Leave Deal
+                        </button>
+                      ) : null}
                     </div>
                   </div>
                 ))}
-              </div>
-              <div className="flex justify-end mt-4">
-                <button
-                  onClick={() => setIsMyDealsModalOpen(false)}
-                  className="bg-gray-300 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-400"
-                >
-                  Close
-                </button>
               </div>
             </motion.div>
           </motion.div>

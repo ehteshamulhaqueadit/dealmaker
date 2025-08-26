@@ -1,11 +1,14 @@
 import dealModel from "../models/dealsModel.js";
+import { Op } from "sequelize";
 
 export const getMyDealsController = async (req, res) => {
-  const dealer_creator = req.user.username;
+  const username = req.user.username;
 
   try {
     const myDeals = await dealModel.findAll({
-      where: { dealer_creator },
+      where: {
+        [Op.or]: [{ dealer_creator: username }, { dealer_joined: username }],
+      },
       order: [["createdAt", "DESC"]], // Sort by createdAt in descending order
     });
     res.status(200).json(myDeals);

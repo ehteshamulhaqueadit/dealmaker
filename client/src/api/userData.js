@@ -2,24 +2,12 @@ import axios from "./axiosInstance";
 
 // Get user profile
 export async function getUserProfile() {
-  const response = await axios.get("/userData/profile");
+  const response = await axios.get("/user-profile"); // Updated URL
   return response.data;
 }
 
 // Update user profile
 export async function updateUserProfile(data) {
-  const response = await axios.put("/userData/profile", data);
-  return response.data;
-}
-
-// Get all user data (example)
-export async function getAllUserData() {
-  const response = await axios.get("/userData/all");
-  return response.data;
-}
-
-// Delete user account (example)
-export async function deleteUserAccount() {
-  const response = await axios.delete("/userData/delete");
+  const response = await axios.post("/user-profile", data); // Changed PUT to POST
   return response.data;
 }

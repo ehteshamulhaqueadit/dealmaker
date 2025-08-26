@@ -2,6 +2,10 @@ import express from "express";
 import authRouter from "./features/auth/routes/authRoute.js";
 import userProfileRouter from "./features/auth/routes/userProfileRoute.js";
 import syncModels from "./syncModels.js";
+
+import profilesRouter from "./features/twoProfiles/routes/profilesRoutes.js";
+import dealRouter from "./features/deals/routes/dealsRoute.js";
+
 // import cors from "cors";
 import dotenv from "dotenv";
 import cors from "cors";
@@ -13,7 +17,9 @@ const app = express();
 
 app.use(
   cors({
-    origin: process.env.CLIENT_ORIGIN,
+    origin: (origin, callback) => {
+      callback(null, origin); // Echo back the requesting origin
+    },
     credentials: true,
   })
 );
@@ -22,6 +28,9 @@ app.use(express.json());
 app.use("/api/auth", authRouter);
 app.use("/api/user-profile", userProfileRouter);
 
+app.use("/api/profiles", profilesRouter);
+
+app.use("/api/deals", dealRouter);
 // Sync models before starting server
 (async () => {
   try {

@@ -9,10 +9,6 @@ export const userDataModel = db_connection.define(
       type: DataTypes.DATEONLY,
       allowNull: true,
     },
-    photo: {
-      type: DataTypes.STRING,
-      allowNull: true,
-    },
     address: {
       type: DataTypes.TEXT,
       allowNull: true,
@@ -37,22 +33,3 @@ userDataModel.belongsTo(userModel, {
   foreignKey: "username",
   targetKey: "username",
 });
-
-class User {
-  constructor(username) {
-    this.username = username;
-    authmodel
-      .findOne({
-        where: { username: this.username },
-        attributes: ["username", "email"],
-      })
-      .then((user) => {
-        if (user) {
-          this.name = user.full_name;
-          this.email = user.email;
-        } else {
-          throw new Error("User not found");
-        }
-      });
-  }
-}

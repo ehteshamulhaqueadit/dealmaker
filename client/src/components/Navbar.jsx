@@ -10,6 +10,7 @@ export default function Navbar({ onAuthButtonClick }) {
     { name: "Deals", href: "/deals" },
     { name: "Profile", href: "/profile" },
     { name: "About", href: "/about" },
+    { name: "UserProfile", href: "/user-profile" }, // Added link to UserProfile page
   ];
 
   return (

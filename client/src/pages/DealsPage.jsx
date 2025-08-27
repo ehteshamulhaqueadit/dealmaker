@@ -8,11 +8,13 @@ import {
   deleteDeal,
 } from "../api/deals";
 import { getUserProfile } from "../api/userData";
+import { createBid, updateBid, deleteBid, getBidByDealId } from "../api/bids";
 import { motion, AnimatePresence } from "framer-motion";
 
 const DealsPage = () => {
   const [deals, setDeals] = useState([]);
   const [myDeals, setMyDeals] = useState([]);
+  const [bids, setBids] = useState([]);
   const [newDeal, setNewDeal] = useState({
     title: "",
     description: "",
@@ -24,18 +26,26 @@ const DealsPage = () => {
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [isMyDealsModalOpen, setIsMyDealsModalOpen] = useState(false);
   const [username, setUsername] = useState(null); // State to store the logged-in user's username
+  const [isBidModalOpen, setIsBidModalOpen] = useState(false);
+  const [selectedDealId, setSelectedDealId] = useState(null);
+  const [currentBid, setCurrentBid] = useState(null); // To hold the entire bid object for updates
+  const [bidPrice, setBidPrice] = useState("");
+
+  const loadDeals = async () => {
+    try {
+      const dealsData = await fetchDeals(""); // Fetch all deals by default
+      setDeals(dealsData);
+      // For each deal, fetch the bids
+      const bidsPromises = dealsData.map((deal) => getBidByDealId(deal.id));
+      const bidsForDeals = await Promise.all(bidsPromises);
+      const allBids = bidsForDeals.flat(); // Flatten the array of arrays
+      setBids(allBids);
+    } catch (error) {
+      console.error("Failed to fetch deals or bids", error);
+    }
+  };
 
   useEffect(() => {
-    const loadDeals = async () => {
-      try {
-        const data = await fetchDeals(""); // Fetch all deals by default
-        console.log("Deals data:", data); // Log deals data to verify creatorId
-        setDeals(data);
-      } catch (error) {
-        console.error("Failed to fetch deals", error);
-      }
-    };
-
     const fetchUsername = async () => {
       try {
         const userData = await getUserProfile(); // Use the existing API function to fetch user profile
@@ -140,6 +150,37 @@ const DealsPage = () => {
     }
   };
 
+  const handleCreateOrUpdateBid = async (e) => {
+    e.preventDefault();
+    try {
+      if (currentBid) {
+        await updateBid(currentBid.id, { price: bidPrice });
+        setMessage("Bid updated successfully!");
+      } else {
+        await createBid({ dealId: selectedDealId, price: bidPrice });
+        setMessage("Bid created successfully!");
+      }
+      setIsBidModalOpen(false);
+      setCurrentBid(null);
+      setBidPrice("");
+      loadDeals(); // Refresh deals
+    } catch (error) {
+      console.error("Failed to create/update bid", error);
+      setMessage("Failed to create/update bid.");
+    }
+  };
+
+  const handleDeleteBid = async (bidId) => {
+    try {
+      await deleteBid(bidId);
+      setMessage("Bid deleted successfully!");
+      loadDeals(); // Refresh deals
+    } catch (error) {
+      console.error("Failed to delete bid", error);
+      setMessage("Failed to delete bid.");
+    }
+  };
+
   return (
     <div className="p-6 bg-gray-100 min-h-screen">
       <h1 className="text-3xl font-bold text-center mb-6">Deals</h1>
@@ -186,28 +227,90 @@ const DealsPage = () => {
                 ? `Joined by: ${deal.dealer_joined}`
                 : "No one has joined yet"}
             </p>
-            {deal.creatorId === username ? (
-              <button
-                onClick={() => handleDeleteDeal(deal.id)}
-                className="bg-red-500 text-white px-4 py-2 rounded-lg hover:bg-red-600"
-              >
-                Delete Deal
-              </button>
-            ) : deal.dealer_joined === username ? (
-              <button
-                onClick={() => handleLeaveDeal(deal.id)}
-                className="bg-yellow-500 text-white px-4 py-2 rounded-lg hover:bg-yellow-600"
-              >
-                Leave Deal
-              </button>
-            ) : !deal.dealer_joined ? (
-              <button
-                onClick={() => handleJoinDeal(deal.id)}
-                className="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600"
-              >
-                Join Deal
-              </button>
-            ) : null}
+            <div className="flex items-center space-x-2 mt-4">
+              {(() => {
+                // Condition 1: User is the creator of the deal
+                if (deal.creatorId === username) {
+                  return (
+                    <button
+                      onClick={() => handleDeleteDeal(deal.id)}
+                      className="bg-red-500 text-white px-4 py-2 rounded-lg hover:bg-red-600"
+                    >
+                      Delete Deal
+                    </button>
+                  );
+                } else {
+                  // User is not the creator
+                  if (deal.dealer_joined === username) {
+                    // Condition 2: User has joined the deal
+                    return (
+                      <button
+                        onClick={() => handleLeaveDeal(deal.id)}
+                        className="bg-yellow-500 text-white px-4 py-2 rounded-lg hover:bg-yellow-600"
+                      >
+                        Leave Deal
+                      </button>
+                    );
+                  } else {
+                    const userBid = bids.find(
+                      (bid) =>
+                        bid.dealId === deal.id && bid.dealmaker === username
+                    );
+                    if (userBid) {
+                      // Condition 3: User has created a bid
+                      return (
+                        <>
+                          <button
+                            onClick={() => {
+                              setIsBidModalOpen(true);
+                              setSelectedDealId(deal.id);
+                              setCurrentBid(userBid);
+                              setBidPrice(userBid.price);
+                            }}
+                            className="bg-purple-500 text-white px-4 py-2 rounded-lg hover:bg-purple-600"
+                          >
+                            Update Bid
+                          </button>
+                          <button
+                            onClick={() => handleDeleteBid(userBid.id)}
+                            className="bg-red-700 text-white px-4 py-2 rounded-lg hover:bg-red-800"
+                          >
+                            Delete Bid
+                          </button>
+                        </>
+                      );
+                    } else {
+                      // Condition 4: User has not joined and has not bid
+                      if (!deal.dealer_joined) {
+                        return (
+                          <>
+                            <button
+                              onClick={() => handleJoinDeal(deal.id)}
+                              className="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600"
+                            >
+                              Join Deal
+                            </button>
+                            <button
+                              onClick={() => {
+                                setIsBidModalOpen(true);
+                                setSelectedDealId(deal.id);
+                                setCurrentBid(null);
+                                setBidPrice("");
+                              }}
+                              className="bg-green-500 text-white px-4 py-2 rounded-lg hover:bg-green-600"
+                            >
+                              Bid as Dealmaker
+                            </button>
+                          </>
+                        );
+                      }
+                    }
+                  }
+                }
+                // If none of the above conditions are met (e.g., another user has joined), show nothing.
+                return null;
+              })()}
+            </div>
           </div>
         ))}
       </div>
@@ -338,6 +441,53 @@ const DealsPage = () => {
                   </div>
                 ))}
               </div>
+            </motion.div>
+          </motion.div>
+        )}
+
+        {isBidModalOpen && (
+          <motion.div
+            className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={() => setIsBidModalOpen(false)}
+          >
+            <motion.div
+              className="bg-white p-6 rounded-lg shadow-lg w-full max-w-md"
+              initial={{ scale: 0.9 }}
+              animate={{ scale: 1 }}
+              exit={{ scale: 0.9 }}
+              onClick={(e) => e.stopPropagation()}
+            >
+              <h2 className="text-2xl font-bold mb-4">
+                {currentBid ? "Update Bid" : "Bid as Dealmaker"}
+              </h2>
+              <form onSubmit={handleCreateOrUpdateBid}>
+                <input
+                  type="number"
+                  placeholder="Enter your bid price"
+                  value={bidPrice}
+                  onChange={(e) => setBidPrice(e.target.value)}
+                  required
+                  className="border border-gray-300 rounded-lg px-4 py-2 w-full mb-4"
+                />
+                <div className="flex justify-end">
+                  <button
+                    type="button"
+                    onClick={() => setIsBidModalOpen(false)}
+                    className="bg-gray-300 text-gray-700 px-4 py-2 rounded-lg mr-2 hover:bg-gray-400"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    className="bg-green-500 text-white px-4 py-2 rounded-lg hover:bg-green-600"
+                  >
+                    {currentBid ? "Update Bid" : "Submit Bid"}
+                  </button>
+                </div>
+              </form>
             </motion.div>
           </motion.div>
         )}

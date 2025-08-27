@@ -31,7 +31,7 @@ app.use("/api/user-profile", userProfileRouter);
 app.use("/api/profiles", profilesRouter);
 
 app.use("/api/deals", dealRouter);
-app.use("/api/bids", biddingRouter);
+app.use("/api/bidding", biddingRouter);
 
 // Sync models before starting server
 (async () => {

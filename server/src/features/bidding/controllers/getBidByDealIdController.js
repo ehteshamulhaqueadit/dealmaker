@@ -1,4 +1,4 @@
-import biddingModel from "../model/biddingModels.js";
+import biddingModel from "../models/biddingModel.js";
 
 export const getBidByDealId = async (req, res) => {
   try {

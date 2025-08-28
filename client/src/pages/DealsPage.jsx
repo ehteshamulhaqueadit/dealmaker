@@ -10,6 +10,7 @@ import {
 import { getUserProfile } from "../api/userData";
 import { createBid, updateBid, deleteBid, getBidByDealId } from "../api/bids";
 import { motion, AnimatePresence } from "framer-motion";
+import DealDetailView from "../components/DealDetailView";
 
 const DealsPage = () => {
   const [deals, setDeals] = useState([]);
@@ -30,6 +31,7 @@ const DealsPage = () => {
   const [selectedDealId, setSelectedDealId] = useState(null);
   const [currentBid, setCurrentBid] = useState(null); // To hold the entire bid object for updates
   const [bidPrice, setBidPrice] = useState("");
+  const [selectedDealForView, setSelectedDealForView] = useState(null); // State for the detailed view
 
   const loadDeals = async () => {
     try {
@@ -180,6 +182,27 @@ const DealsPage = () => {
       setMessage("Failed to delete bid.");
     }
   };
+
+  const handleViewDeal = (deal) => {
+    setSelectedDealForView(deal);
+    setIsMyDealsModalOpen(false); // Close the modal if it's open
+  };
+
+  const handleBackToDeals = () => {
+    setSelectedDealForView(null);
+  };
+
+  if (selectedDealForView) {
+    return (
+      <div className="p-6 bg-gray-100 min-h-screen">
+        <DealDetailView
+          deal={selectedDealForView}
+          bids={bids}
+          onBack={handleBackToDeals}
+        />
+      </div>
+    );
+  }
 
   return (
     <div className="p-6 bg-gray-100 min-h-screen">
@@ -421,8 +444,14 @@ const DealsPage = () => {
                     <p className="text-gray-700">{deal.description}</p>
                     <p className="text-gray-500">Budget: {deal.budget}</p>
                     <p className="text-gray-500">Timeline: {deal.timeline}</p>
-                    <div className="flex justify-end mt-2">
-                      {deal.dealer_creator === username ? (
+                    <div className="flex justify-end mt-2 space-x-2">
+                      <button
+                        onClick={() => handleViewDeal(deal)}
+                        className="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600"
+                      >
+                        View
+                      </button>
+                      {deal.creatorId === username ? (
                         <button
                           onClick={() => handleDeleteDeal(deal.id)}
                           className="bg-red-500 text-white px-4 py-2 rounded-lg hover:bg-red-600"

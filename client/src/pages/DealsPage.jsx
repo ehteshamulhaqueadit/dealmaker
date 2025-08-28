@@ -192,6 +192,12 @@ const DealsPage = () => {
     setSelectedDealForView(null);
   };
 
+  const handleBidSelected = (updatedDeal) => {
+    setSelectedDealForView(updatedDeal.deal);
+    // Refresh all deals to reflect the change
+    loadDeals();
+  };
+
   if (selectedDealForView) {
     return (
       <div className="p-6 bg-gray-100 min-h-screen">
@@ -199,6 +205,7 @@ const DealsPage = () => {
           deal={selectedDealForView}
           bids={bids}
           onBack={handleBackToDeals}
+          onBidSelected={handleBidSelected}
         />
       </div>
     );
@@ -244,7 +251,9 @@ const DealsPage = () => {
             <p className="text-gray-700 mb-2">{deal.description}</p>
             <p className="text-gray-500 mb-2">Budget: {deal.budget}</p>
             <p className="text-gray-500 mb-4">Timeline: {deal.timeline}</p>
-            <p className="text-gray-500 mb-2">Created by: {deal.creatorId}</p>
+            <p className="text-gray-500 mb-2">
+              Created by: {deal.dealer_creator}
+            </p>
             <p className="text-gray-500 mb-4">
               {deal.dealer_joined
                 ? `Joined by: ${deal.dealer_joined}`
@@ -252,8 +261,13 @@ const DealsPage = () => {
             </p>
             <div className="flex items-center space-x-2 mt-4">
               {(() => {
-                // Condition 1: User is the creator of the deal
-                if (deal.creatorId === username) {
+                // User is not the creator
+                const userHasBid = bids.some(
+                  (bid) => bid.dealId === deal.id && bid.dealmaker === username
+                );
+
+                // Buttons for the deal creator
+                if (deal.dealer_creator === username) {
                   return (
                     <button
                       onClick={() => handleDeleteDeal(deal.id)}
@@ -262,76 +276,86 @@ const DealsPage = () => {
                       Delete Deal
                     </button>
                   );
-                } else {
-                  // User is not the creator
-                  if (deal.dealer_joined === username) {
-                    // Condition 2: User has joined the deal
-                    return (
+                }
+
+                // Buttons for other users
+                return (
+                  <>
+                    {/* User has joined the deal */}
+                    {deal.dealer_joined === username && (
                       <button
                         onClick={() => handleLeaveDeal(deal.id)}
                         className="bg-yellow-500 text-white px-4 py-2 rounded-lg hover:bg-yellow-600"
                       >
                         Leave Deal
                       </button>
-                    );
-                  } else {
-                    const userBid = bids.find(
-                      (bid) =>
-                        bid.dealId === deal.id && bid.dealmaker === username
-                    );
-                    if (userBid) {
-                      // Condition 3: User has created a bid
-                      return (
-                        <>
-                          <button
-                            onClick={() => {
-                              setIsBidModalOpen(true);
-                              setSelectedDealId(deal.id);
-                              setCurrentBid(userBid);
-                              setBidPrice(userBid.price);
-                            }}
-                            className="bg-purple-500 text-white px-4 py-2 rounded-lg hover:bg-purple-600"
-                          >
-                            Update Bid
-                          </button>
-                          <button
-                            onClick={() => handleDeleteBid(userBid.id)}
-                            className="bg-red-700 text-white px-4 py-2 rounded-lg hover:bg-red-800"
-                          >
-                            Delete Bid
-                          </button>
-                        </>
-                      );
-                    } else {
-                      // Condition 4: User has not joined and has not bid
-                      if (!deal.dealer_joined) {
-                        return (
-                          <>
-                            <button
-                              onClick={() => handleJoinDeal(deal.id)}
-                              className="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600"
-                            >
-                              Join Deal
-                            </button>
-                            <button
-                              onClick={() => {
-                                setIsBidModalOpen(true);
-                                setSelectedDealId(deal.id);
-                                setCurrentBid(null);
-                                setBidPrice("");
-                              }}
-                              className="bg-green-500 text-white px-4 py-2 rounded-lg hover:bg-green-600"
-                            >
-                              Bid as Dealmaker
-                            </button>
-                          </>
-                        );
-                      }
-                    }
-                  }
-                }
-                // If none of the above conditions are met (e.g., another user has joined), show nothing.
-                return null;
+                    )}
+
+                    {/* User has not joined and no one else has joined */}
+                    {!deal.dealer_joined &&
+                      deal.dealer_creator !== username && (
+                        <button
+                          onClick={() => handleJoinDeal(deal.id)}
+                          className="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600"
+                        >
+                          Join Deal
+                        </button>
+                      )}
+
+                    {/* User can bid if they are not the creator or the joined dealer AND the deal is not finalized */}
+                    {!deal.dealmaker &&
+                      deal.dealer_creator !== username &&
+                      deal.dealer_joined !== username &&
+                      !userHasBid && (
+                        <button
+                          onClick={() => {
+                            setIsBidModalOpen(true);
+                            setSelectedDealId(deal.id);
+                            setCurrentBid(null);
+                            setBidPrice("");
+                          }}
+                          className="bg-green-500 text-white px-4 py-2 rounded-lg hover:bg-green-600"
+                        >
+                          Bid as Dealmaker
+                        </button>
+                      )}
+
+                    {/* User has an existing bid */}
+                    {userHasBid && (
+                      <>
+                        <button
+                          onClick={() => {
+                            const userBid = bids.find(
+                              (bid) =>
+                                bid.dealId === deal.id &&
+                                bid.dealmaker === username
+                            );
+                            setIsBidModalOpen(true);
+                            setSelectedDealId(deal.id);
+                            setCurrentBid(userBid);
+                            setBidPrice(userBid.price);
+                          }}
+                          className="bg-purple-500 text-white px-4 py-2 rounded-lg hover:bg-purple-600"
+                        >
+                          Update Bid
+                        </button>
+                        <button
+                          onClick={() => {
+                            const userBid = bids.find(
+                              (bid) =>
+                                bid.dealId === deal.id &&
+                                bid.dealmaker === username
+                            );
+                            handleDeleteBid(userBid.id);
+                          }}
+                          className="bg-red-700 text-white px-4 py-2 rounded-lg hover:bg-red-800"
+                        >
+                          Delete Bid
+                        </button>
+                      </>
+                    )}
+                  </>
+                );
               })()}
             </div>
           </div>
@@ -451,7 +475,7 @@ const DealsPage = () => {
                       >
                         View
                       </button>
-                      {deal.creatorId === username ? (
+                      {deal.dealer_creator === username ? (
                         <button
                           onClick={() => handleDeleteDeal(deal.id)}
                           className="bg-red-500 text-white px-4 py-2 rounded-lg hover:bg-red-600"

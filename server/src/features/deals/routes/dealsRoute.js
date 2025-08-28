@@ -9,6 +9,7 @@ import { getDealByIdController } from "../controllers/getDealByIdController.js";
 
 import { joinDealAsDealerController } from "../controllers/joinDealAsDealerController.js";
 import { leaveDealAsDealerController } from "../controllers/leaveDealAsDealerController.js";
+import { getDealmakerDealsController } from "../controllers/getDealmakerDealsController.js";
 
 const dealRouter = Router();
 
@@ -17,6 +18,7 @@ dealRouter.use(authentication);
 dealRouter.get("/all", (req, res) => getDealsController(req, res)); // Fetch all deals
 dealRouter.get("/all/:keyword", getDealsController); // Fetch deals by keyword
 dealRouter.get("/my-deals", getMyDealsController);
+dealRouter.get("/dealmaker-deals", getDealmakerDealsController); // Fetch deals for the dealmaker
 
 dealRouter.post("/create-deal", createDealController);
 dealRouter.delete("/delete-deal/:id", deleteDealController);

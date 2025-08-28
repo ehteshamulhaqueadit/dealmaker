@@ -8,6 +8,7 @@ export default function Navbar({ onAuthButtonClick }) {
   const navItems = [
     { name: "Home", href: "/" },
     { name: "Deals", href: "/deals" },
+    { name: "Dealmaker-Panel", href: "/dealmaker-panel" },
     { name: "Profile", href: "/profile" },
     { name: "About", href: "/about" },
   ]; // Updated Profile link to point to /profile

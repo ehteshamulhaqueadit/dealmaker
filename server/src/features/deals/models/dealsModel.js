@@ -38,6 +38,14 @@ const dealModel = db_connection.define(
       type: DataTypes.STRING,
       allowNull: false,
     },
+    selected_bid_by_creator: {
+      type: DataTypes.UUID,
+      allowNull: true,
+    },
+    selected_bid_by_dealer: {
+      type: DataTypes.UUID,
+      allowNull: true,
+    },
   },
   {
     timestamps: true, // Enables createdAt and updatedAt fields

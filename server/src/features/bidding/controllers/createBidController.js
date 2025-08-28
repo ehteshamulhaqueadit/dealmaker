@@ -14,6 +14,13 @@ export const createBid = async (req, res) => {
         .json({ error: "Invalid dealId. Deal does not exist." });
     }
 
+    // Check if the deal is already finalized
+    if (dealExists.dealmaker) {
+      return res.status(403).json({
+        error: "This deal has been finalized and is no longer open for bids.",
+      });
+    }
+
     const newBid = await biddingModel.create({ dealId, dealmaker, price });
     res.status(201).json(newBid);
   } catch (error) {

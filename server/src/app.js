@@ -6,7 +6,7 @@ import syncModels from "./syncModels.js";
 import profilesRouter from "./features/twoProfiles/routes/profilesRoutes.js";
 import dealRouter from "./features/deals/routes/dealsRoute.js";
 import biddingRouter from "./features/bidding/routes/biddingRoute.js";
-// import cors from "cors";
+import bidManagementRouter from "./features/bid_management/routes/bidManagementRoutes.js";
 import dotenv from "dotenv";
 import cors from "cors";
 dotenv.config();
@@ -32,6 +32,7 @@ app.use("/api/profiles", profilesRouter);
 
 app.use("/api/deals", dealRouter);
 app.use("/api/bidding", biddingRouter);
+app.use("/api/bid-management", bidManagementRouter);
 
 // Sync models before starting server
 (async () => {

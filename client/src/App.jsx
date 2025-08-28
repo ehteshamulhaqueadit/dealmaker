@@ -7,6 +7,7 @@ import RegisterForm from "./components/RegisterForm";
 import VerifyEmailPage from "./pages/VerifyEmailPage";
 import Profile from "./pages/Profile"; // Updated import for Profile
 import DealsPage from "./pages/DealsPage";
+import DealmakerPanelPage from "./pages/DealmakerPanelPage";
 import ResetPassword from "./pages/ResetPassword"; // Import ResetPassword page
 
 export default function App() {
@@ -38,6 +39,7 @@ export default function App() {
           <Route path="/profile" element={<Profile />} />{" "}
           {/* Updated route for Profile */}
           <Route path="/deals" element={<DealsPage />} />
+          <Route path="/dealmaker-panel" element={<DealmakerPanelPage />} />
           <Route
             path="/api/auth/reset_password/:username/:token"
             element={<ResetPassword />}

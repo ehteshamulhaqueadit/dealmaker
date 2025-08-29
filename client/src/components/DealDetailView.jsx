@@ -62,9 +62,12 @@ const DealDetailView = ({ deal, bids = [], onBack, onBidSelected }) => {
   }, [updatedDeal.dealmaker, updatedDeal.id]);
 
   const handleSelectBid = async (bidId) => {
+    console.log("Selecting bid:", bidId, "for deal:", deal.id);
     try {
-      const updatedDeal = await selectBid(deal.id, bidId);
-      onBidSelected(updatedDeal);
+      const response = await selectBid(deal.id, bidId);
+      console.log("Bid selection response:", response);
+      setUpdatedDeal(response.deal); // Update local state
+      onBidSelected(response.deal); // Update parent state
     } catch (error) {
       console.error("Failed to select bid", error);
       // Optionally, show an error message to the user

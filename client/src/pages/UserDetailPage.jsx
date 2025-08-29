@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { useParams, useNavigate } from "react-router-dom";
+import { FiUser } from "react-icons/fi";
 import { getUserDetails } from "../api/users";
 import { fetchMyDeals } from "../api/deals";
 import ReviewsDisplay from "../components/ReviewsDisplay";
@@ -137,10 +138,16 @@ const UserDetailPage = () => {
         className="bg-white rounded-lg shadow-md p-6 mb-6"
       >
         <div className="flex items-center space-x-6">
-          <div className="w-20 h-20 bg-indigo-100 rounded-full flex items-center justify-center">
-            <span className="text-3xl font-bold text-indigo-600">
-              {user.username?.charAt(0).toUpperCase() || "?"}
-            </span>
+          <div className="w-20 h-20 rounded-full overflow-hidden bg-indigo-100 flex items-center justify-center border-4 border-indigo-200">
+            {user.profile?.profile_picture ? (
+              <img
+                src={`http://localhost:8000${user.profile.profile_picture}`}
+                alt={`${user.username}'s profile`}
+                className="w-full h-full object-cover"
+              />
+            ) : (
+              <FiUser className="w-8 h-8 text-indigo-600" />
+            )}
           </div>
           <div className="flex-1">
             <h1 className="text-3xl font-bold text-gray-900">
@@ -252,7 +259,35 @@ const UserDetailPage = () => {
                   {new Date(user.updatedAt).toLocaleDateString()}
                 </p>
               </div>
+              {user.profile?.occupation && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Occupation
+                  </label>
+                  <p className="text-sm text-gray-900">
+                    {user.profile.occupation}
+                  </p>
+                </div>
+              )}
+              {user.profile?.date_of_birth && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Date of Birth
+                  </label>
+                  <p className="text-sm text-gray-900">
+                    {new Date(user.profile.date_of_birth).toLocaleDateString()}
+                  </p>
+                </div>
+              )}
             </div>
+            {user.profile?.address && (
+              <div className="mt-4">
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Address
+                </label>
+                <p className="text-sm text-gray-900">{user.profile.address}</p>
+              </div>
+            )}
           </div>
         )}
 

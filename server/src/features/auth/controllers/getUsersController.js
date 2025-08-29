@@ -1,4 +1,5 @@
 import { userModel } from "../models/authModel.js";
+import { userDataModel } from "../models/userData.js";
 import { Op } from "sequelize";
 
 // Get all users except the current user
@@ -13,6 +14,11 @@ export const getAllUsers = async (req, res) => {
         },
       },
       attributes: ["username", "full_name", "email", "createdAt", "updatedAt"],
+      include: {
+        model: userDataModel,
+        as: "profile",
+        attributes: ["profile_picture"],
+      },
       order: [["createdAt", "DESC"]],
     });
 
@@ -57,6 +63,11 @@ export const searchUsers = async (req, res) => {
         ],
       },
       attributes: ["username", "full_name", "email", "createdAt", "updatedAt"],
+      include: {
+        model: userDataModel,
+        as: "profile",
+        attributes: ["profile_picture"],
+      },
       order: [["createdAt", "DESC"]],
       limit: 50, // Limit results to prevent performance issues
     });
@@ -85,6 +96,16 @@ export const getUserDetails = async (req, res) => {
     const user = await userModel.findOne({
       where: { username },
       attributes: ["username", "full_name", "email", "createdAt", "updatedAt"],
+      include: {
+        model: userDataModel,
+        as: "profile",
+        attributes: [
+          "profile_picture",
+          "date_of_birth",
+          "address",
+          "occupation",
+        ],
+      },
     });
 
     if (!user) {

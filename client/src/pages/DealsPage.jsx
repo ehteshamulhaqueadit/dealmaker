@@ -387,7 +387,8 @@ const DealsPage = () => {
   };
 
   const handleBidSelected = (updatedDeal) => {
-    setSelectedDealForView(updatedDeal.deal);
+    console.log("Handling bid selection in parent, updated deal:", updatedDeal);
+    setSelectedDealForView(updatedDeal);
     // Refresh all deals to reflect the change
     loadDeals();
   };

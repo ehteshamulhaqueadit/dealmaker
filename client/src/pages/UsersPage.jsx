@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { motion } from "framer-motion";
+import { FiUser } from "react-icons/fi";
 import { getAllUsers, searchUsers } from "../api/users";
 import { useNavigate } from "react-router-dom";
 
@@ -161,10 +162,16 @@ const UsersPage = () => {
                 className="bg-white rounded-lg shadow-md border border-gray-200 p-6 hover:shadow-lg transition-shadow"
               >
                 <div className="flex items-center space-x-4 mb-4">
-                  <div className="w-12 h-12 bg-indigo-100 rounded-full flex items-center justify-center">
-                    <span className="text-lg font-semibold text-indigo-600">
-                      {user.username?.charAt(0).toUpperCase() || "?"}
-                    </span>
+                  <div className="w-12 h-12 rounded-full overflow-hidden bg-indigo-100 flex items-center justify-center border-2 border-indigo-200">
+                    {user.profile?.profile_picture ? (
+                      <img
+                        src={`http://localhost:8000${user.profile.profile_picture}`}
+                        alt={`${user.username}'s profile`}
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <FiUser className="w-6 h-6 text-indigo-600" />
+                    )}
                   </div>
                   <div className="flex-1 min-w-0">
                     <h3 className="text-lg font-medium text-gray-900 truncate">

@@ -3,6 +3,7 @@ import { motion } from "framer-motion";
 import { useParams, useNavigate } from "react-router-dom";
 import { getUserDetails } from "../api/users";
 import { fetchMyDeals } from "../api/deals";
+import ReviewsDisplay from "../components/ReviewsDisplay";
 
 const UserDetailPage = () => {
   const { username } = useParams();
@@ -187,6 +188,16 @@ const UserDetailPage = () => {
             >
               Activity ({userDeals.length})
             </button>
+            <button
+              onClick={() => setActiveTab("reviews")}
+              className={`py-2 px-1 border-b-2 font-medium text-sm ${
+                activeTab === "reviews"
+                  ? "border-indigo-500 text-indigo-600"
+                  : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
+              }`}
+            >
+              Reviews
+            </button>
           </nav>
         </div>
       </motion.div>
@@ -322,6 +333,12 @@ const UserDetailPage = () => {
                 ))}
               </div>
             )}
+          </div>
+        )}
+
+        {activeTab === "reviews" && (
+          <div className="bg-white rounded-lg shadow-md p-6">
+            <ReviewsDisplay username={username} />
           </div>
         )}
       </motion.div>

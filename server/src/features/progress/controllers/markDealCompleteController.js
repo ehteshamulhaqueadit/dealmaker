@@ -75,23 +75,59 @@ export const markDealComplete = async (req, res) => {
       });
 
       if (escrow && escrow.status === "locked") {
-        // Find dealmaker's wallet
-        const dealmakerWallet = await Wallet.findOne({
+        // Find or create dealmaker's wallet
+        let dealmakerWallet = await Wallet.findOne({
           where: { username: deal.dealmaker },
+          include: [
+            {
+              model: userModel,
+              as: "user",
+              attributes: ["id", "username"],
+            },
+          ],
           transaction,
         });
 
         if (!dealmakerWallet) {
-          await transaction.rollback();
-          return res.status(404).json({
-            message: "Dealmaker wallet not found",
+          // Find dealmaker user first
+          const dealmakerUser = await userModel.findOne({
+            where: { username: deal.dealmaker },
+            transaction,
           });
+
+          if (!dealmakerUser) {
+            await transaction.rollback();
+            return res.status(404).json({
+              message: "Dealmaker user not found",
+            });
+          }
+
+          // Create wallet for dealmaker
+          dealmakerWallet = await Wallet.create(
+            {
+              userId: dealmakerUser.id,
+              username: deal.dealmaker,
+              balance: 0,
+              totalDeposited: 0,
+              totalWithdrawn: 0,
+            },
+            { transaction }
+          );
+
+          // Set user relation for consistency
+          dealmakerWallet.user = {
+            id: dealmakerUser.id,
+            username: dealmakerUser.username,
+          };
         }
 
         // Transfer escrow to dealmaker
+        const newBalance =
+          parseFloat(dealmakerWallet.balance) + parseFloat(escrow.totalAmount);
+
         await Wallet.update(
           {
-            balance: db_connection.literal(`balance + ${escrow.totalAmount}`),
+            balance: newBalance,
           },
           {
             where: { username: deal.dealmaker },
@@ -102,11 +138,14 @@ export const markDealComplete = async (req, res) => {
         // Create transaction record
         await Transaction.create(
           {
+            userId: dealmakerWallet.user.id,
             username: deal.dealmaker,
             type: "escrow_release",
             amount: escrow.totalAmount,
             description: `Escrow payment released for deal: ${deal.title}`,
             dealId: dealId,
+            status: "completed",
+            balanceAfter: newBalance,
           },
           { transaction }
         );

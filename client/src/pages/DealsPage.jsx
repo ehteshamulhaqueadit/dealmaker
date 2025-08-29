@@ -9,6 +9,7 @@ import {
 } from "../api/deals";
 import { getUserProfile } from "../api/userData";
 import { createBid, updateBid, deleteBid, getBidByDealId } from "../api/bids";
+import { getEscrowStatus } from "../api/wallet";
 import { motion, AnimatePresence } from "framer-motion";
 import DealDetailView from "../components/DealDetailView";
 
@@ -16,6 +17,7 @@ const DealsPage = () => {
   const [deals, setDeals] = useState([]);
   const [myDeals, setMyDeals] = useState([]);
   const [bids, setBids] = useState([]);
+  const [escrowStatuses, setEscrowStatuses] = useState({});
   const [newDeal, setNewDeal] = useState({
     title: "",
     description: "",
@@ -42,6 +44,35 @@ const DealsPage = () => {
       const bidsForDeals = await Promise.all(bidsPromises);
       const allBids = bidsForDeals.flat(); // Flatten the array of arrays
       setBids(allBids);
+
+      // Load escrow statuses for deals with dealmakers
+      const escrowStatuses = {};
+      await Promise.all(
+        dealsData.map(async (deal) => {
+          if (deal.dealmaker) {
+            try {
+              const status = await getEscrowStatus(deal.id);
+              // Flatten the escrow object structure for easier access
+              if (status.escrowExists && status.escrow) {
+                escrowStatuses[deal.id] = {
+                  ...status.escrow,
+                  creatorPaid: status.escrow.creatorPaid,
+                  counterpartPaid: status.escrow.counterpartPaid,
+                };
+              } else {
+                escrowStatuses[deal.id] = null;
+              }
+            } catch (error) {
+              console.error(
+                `Failed to fetch escrow status for deal ${deal.id}`,
+                error
+              );
+              escrowStatuses[deal.id] = null;
+            }
+          }
+        })
+      );
+      setEscrowStatuses(escrowStatuses);
     } catch (error) {
       console.error("Failed to fetch deals or bids", error);
     }
@@ -92,6 +123,35 @@ const DealsPage = () => {
     try {
       const data = await fetchMyDeals();
       setMyDeals(data);
+
+      // Load escrow statuses for my deals with dealmakers
+      const escrowStatuses = {};
+      await Promise.all(
+        data.map(async (deal) => {
+          if (deal.dealmaker) {
+            try {
+              const status = await getEscrowStatus(deal.id);
+              // Flatten the escrow object structure for easier access
+              if (status.escrowExists && status.escrow) {
+                escrowStatuses[deal.id] = {
+                  ...status.escrow,
+                  creatorPaid: status.escrow.creatorPaid,
+                  counterpartPaid: status.escrow.counterpartPaid,
+                };
+              } else {
+                escrowStatuses[deal.id] = null;
+              }
+            } catch (error) {
+              console.error(
+                `Failed to fetch escrow status for deal ${deal.id}`,
+                error
+              );
+              escrowStatuses[deal.id] = null;
+            }
+          }
+        })
+      );
+      setEscrowStatuses((prev) => ({ ...prev, ...escrowStatuses }));
       setIsMyDealsModalOpen(true);
     } catch (error) {
       console.error("Failed to fetch my deals", error);
@@ -266,8 +326,25 @@ const DealsPage = () => {
                   (bid) => bid.dealId === deal.id && bid.dealmaker === username
                 );
 
+                // Check if escrow has been paid by anyone (makes deal undeleteable)
+                const escrowStatus = escrowStatuses[deal.id];
+                const hasEscrowPayment =
+                  escrowStatus &&
+                  (escrowStatus.creatorPaid || escrowStatus.counterpartPaid);
+
                 // Buttons for the deal creator
                 if (deal.dealer_creator === username) {
+                  // Don't show delete button if:
+                  // 1. Deal has a dealmaker but no escrow yet (payment option should be shown first)
+                  // 2. Anyone has made escrow payment (deal becomes protected)
+                  if (hasEscrowPayment) {
+                    return (
+                      <span className="text-gray-500 italic">
+                        Deal is protected - escrow payment made
+                      </span>
+                    );
+                  }
+
                   return (
                     <button
                       onClick={() => handleDeleteDeal(deal.id)}
@@ -283,12 +360,20 @@ const DealsPage = () => {
                   <>
                     {/* User has joined the deal */}
                     {deal.dealer_joined === username && (
-                      <button
-                        onClick={() => handleLeaveDeal(deal.id)}
-                        className="bg-yellow-500 text-white px-4 py-2 rounded-lg hover:bg-yellow-600"
-                      >
-                        Leave Deal
-                      </button>
+                      <>
+                        {hasEscrowPayment ? (
+                          <span className="text-gray-500 italic">
+                            Cannot leave - escrow payment made
+                          </span>
+                        ) : (
+                          <button
+                            onClick={() => handleLeaveDeal(deal.id)}
+                            className="bg-yellow-500 text-white px-4 py-2 rounded-lg hover:bg-yellow-600"
+                          >
+                            Leave Deal
+                          </button>
+                        )}
+                      </>
                     )}
 
                     {/* User has not joined and no one else has joined */}
@@ -462,37 +547,62 @@ const DealsPage = () => {
               </button>
               <h2 className="text-2xl font-bold mb-4">My Deals</h2>
               <div className="space-y-4">
-                {myDeals.map((deal) => (
-                  <div key={deal.id} className="bg-gray-100 p-4 rounded-lg">
-                    <h3 className="text-lg font-semibold">{deal.title}</h3>
-                    <p className="text-gray-700">{deal.description}</p>
-                    <p className="text-gray-500">Budget: {deal.budget}</p>
-                    <p className="text-gray-500">Timeline: {deal.timeline}</p>
-                    <div className="flex justify-end mt-2 space-x-2">
-                      <button
-                        onClick={() => handleViewDeal(deal)}
-                        className="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600"
-                      >
-                        View
-                      </button>
-                      {deal.dealer_creator === username ? (
+                {myDeals.map((deal) => {
+                  // Check if escrow has been paid by anyone (makes deal undeleteable)
+                  const escrowStatus = escrowStatuses[deal.id];
+                  const hasEscrowPayment =
+                    escrowStatus &&
+                    (escrowStatus.creatorPaid || escrowStatus.counterpartPaid);
+
+                  return (
+                    <div key={deal.id} className="bg-gray-100 p-4 rounded-lg">
+                      <h3 className="text-lg font-semibold">{deal.title}</h3>
+                      <p className="text-gray-700">{deal.description}</p>
+                      <p className="text-gray-500">Budget: {deal.budget}</p>
+                      <p className="text-gray-500">Timeline: {deal.timeline}</p>
+                      {hasEscrowPayment && (
+                        <p className="text-green-600 font-medium">
+                          🔒 Protected (Escrow paid)
+                        </p>
+                      )}
+                      <div className="flex justify-end mt-2 space-x-2">
                         <button
-                          onClick={() => handleDeleteDeal(deal.id)}
-                          className="bg-red-500 text-white px-4 py-2 rounded-lg hover:bg-red-600"
+                          onClick={() => handleViewDeal(deal)}
+                          className="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600"
                         >
-                          Delete Deal
+                          View
                         </button>
-                      ) : deal.dealer_joined === username ? (
-                        <button
-                          onClick={() => handleLeaveDeal(deal.id)}
-                          className="bg-yellow-500 text-white px-4 py-2 rounded-lg hover:bg-yellow-600"
-                        >
-                          Leave Deal
-                        </button>
-                      ) : null}
+                        {deal.dealer_creator === username ? (
+                          hasEscrowPayment ? (
+                            <span className="text-gray-500 text-sm italic px-4 py-2">
+                              Protected - Cannot delete
+                            </span>
+                          ) : (
+                            <button
+                              onClick={() => handleDeleteDeal(deal.id)}
+                              className="bg-red-500 text-white px-4 py-2 rounded-lg hover:bg-red-600"
+                            >
+                              Delete Deal
+                            </button>
+                          )
+                        ) : deal.dealer_joined === username ? (
+                          hasEscrowPayment ? (
+                            <span className="text-gray-500 text-sm italic px-4 py-2">
+                              Protected - Cannot leave
+                            </span>
+                          ) : (
+                            <button
+                              onClick={() => handleLeaveDeal(deal.id)}
+                              className="bg-yellow-500 text-white px-4 py-2 rounded-lg hover:bg-yellow-600"
+                            >
+                              Leave Deal
+                            </button>
+                          )
+                        ) : null}
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             </motion.div>
           </motion.div>

@@ -7,6 +7,7 @@ import Progress from "./features/progress/models/progressModel.js";
 import Wallet from "./features/wallet/models/walletModel.js";
 import Transaction from "./features/wallet/models/transactionModel.js";
 import Escrow from "./features/wallet/models/escrowModel.js";
+import Review from "./features/reviews/models/reviewModel.js";
 
 async function syncModels() {
   try {

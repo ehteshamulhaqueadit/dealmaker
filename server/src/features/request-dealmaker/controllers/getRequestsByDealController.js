@@ -15,6 +15,7 @@ export const getRequestsByDealController = async (req, res) => {
       senderUsername: r.sender,
       receiverUsername: r.receiver,
       message: r.message,
+      rejected: r.rejected, // Include the rejected status
       createdAt: r.createdAt,
       updatedAt: r.updatedAt,
     }));

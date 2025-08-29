@@ -39,6 +39,14 @@ const RequestDealmaker = db_connection.define(
         key: "id",
       },
     },
+    status: {
+      type: DataTypes.STRING,
+      defaultValue: "pending", // e.g., pending, accepted, rejected
+    },
+    rejected: {
+      type: DataTypes.BOOLEAN,
+      defaultValue: false,
+    },
   },
   {
     timestamps: true,

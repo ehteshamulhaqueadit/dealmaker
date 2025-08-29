@@ -37,6 +37,13 @@ export const acceptDealmakerRequest = async (requestId) => {
   return response.data;
 };
 
+export const rejectDealmakerRequest = async (requestId) => {
+  const response = await axiosInstance.post(
+    `/request-dealmaker/reject/${requestId}`
+  );
+  return response.data;
+};
+
 export const cancelDealmakerRequest = async (requestId) => {
   const response = await axiosInstance.delete(
     `/request-dealmaker/cancel/${requestId}`

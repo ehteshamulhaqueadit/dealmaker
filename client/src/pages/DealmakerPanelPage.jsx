@@ -36,6 +36,11 @@ const DealmakerPanelPage = () => {
     fetchDealmakerDeals(); // Refresh the deals list
   };
 
+  const handleRequestRejected = () => {
+    // Refetch the requests to update the modal view
+    handleViewRequests();
+  };
+
   useEffect(() => {
     fetchDealmakerDeals();
   }, []);
@@ -101,6 +106,7 @@ const DealmakerPanelPage = () => {
           requests={requests}
           onClose={() => setIsRequestsModalOpen(false)}
           onAccept={handleRequestAccepted}
+          onReject={handleRequestRejected}
         />
       )}
     </div>

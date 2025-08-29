@@ -11,6 +11,7 @@ export const getDealmakerRequestsController = async (req, res) => {
     const requests = await RequestDealmaker.findAll({
       where: {
         receiver: loggedInUser,
+        rejected: false, // Only show requests that have not been rejected
       },
       include: [
         {

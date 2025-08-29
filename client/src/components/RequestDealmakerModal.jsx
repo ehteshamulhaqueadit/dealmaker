@@ -157,7 +157,12 @@ const RequestDealmakerModal = ({ dealId, onClose }) => {
             <div className="overflow-y-auto">
               {sentRequests.length > 0 ? (
                 sentRequests.map((request) => (
-                  <div key={request.id} className="border p-3 rounded mb-2">
+                  <div
+                    key={request.id}
+                    className={`border p-3 rounded mb-2 ${
+                      request.rejected ? "bg-red-100" : ""
+                    }`}
+                  >
                     <p>
                       <span className="font-bold">To:</span>{" "}
                       {request.receiverUsername}
@@ -169,10 +174,16 @@ const RequestDealmakerModal = ({ dealId, onClose }) => {
                     <p className="text-sm text-gray-600 mt-1">
                       {request.message}
                     </p>
+                    {request.rejected && (
+                      <p className="text-red-600 font-bold mt-2">
+                        Status: Rejected
+                      </p>
+                    )}
                     <div className="flex justify-end mt-2">
                       <button
                         onClick={() => handleCancelRequest(request.id)}
                         className="bg-red-500 text-white p-2 rounded"
+                        disabled={request.rejected}
                       >
                         Cancel Request
                       </button>

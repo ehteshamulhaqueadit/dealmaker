@@ -1,7 +1,10 @@
 import React from "react";
-import { acceptDealmakerRequest } from "../api/requestDealmaker";
+import {
+  acceptDealmakerRequest,
+  rejectDealmakerRequest,
+} from "../api/requestDealmaker";
 
-const ViewRequestsModal = ({ requests, onClose, onAccept }) => {
+const ViewRequestsModal = ({ requests, onClose, onAccept, onReject }) => {
   const handleAccept = async (requestId) => {
     try {
       await acceptDealmakerRequest(requestId);
@@ -9,6 +12,15 @@ const ViewRequestsModal = ({ requests, onClose, onAccept }) => {
     } catch (error) {
       console.error("Failed to accept request:", error);
       // Optionally, show an error notification to the user
+    }
+  };
+
+  const handleReject = async (requestId) => {
+    try {
+      await rejectDealmakerRequest(requestId);
+      onReject();
+    } catch (error) {
+      console.error("Failed to reject request:", error);
     }
   };
 
@@ -60,7 +72,13 @@ const ViewRequestsModal = ({ requests, onClose, onAccept }) => {
                   <p className="font-semibold">Request Message:</p>
                   <p className="text-gray-600 italic">"{request.message}"</p>
                 </div>
-                <div className="flex justify-end mt-4">
+                <div className="flex justify-end mt-4 space-x-4">
+                  <button
+                    onClick={() => handleReject(request.id)}
+                    className="bg-red-500 text-white py-2 px-4 rounded hover:bg-red-600"
+                  >
+                    Reject
+                  </button>
                   <button
                     onClick={() => handleAccept(request.id)}
                     className="bg-green-500 text-white py-2 px-4 rounded hover:bg-green-600"

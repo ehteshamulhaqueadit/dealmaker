@@ -7,6 +7,11 @@ import { loginController } from "../controllers/loginController.js";
 import { authentication } from "../../../middleware/authMiddleware.js";
 import { getPublicInfoController } from "../controllers/getPublicInfoController.js";
 import { getOnePublicInfoController } from "../controllers/getOnePublicInfoController.js";
+import {
+  getAllUsers,
+  searchUsers,
+  getUserDetails,
+} from "../controllers/getUsersController.js";
 
 const authRouter = Router();
 
@@ -23,5 +28,10 @@ authRouter.use(authentication);
 
 authRouter.route("/public-info").get(getPublicInfoController);
 authRouter.route("/public-info/user/:username").get(getOnePublicInfoController);
+
+// User management routes
+authRouter.route("/users").get(getAllUsers);
+authRouter.route("/users/search").get(searchUsers);
+authRouter.route("/users/:username").get(getUserDetails);
 
 export default authRouter;

@@ -3,10 +3,10 @@ import authRouter from "./features/auth/routes/authRoute.js";
 import userProfileRouter from "./features/auth/routes/userProfileRoute.js";
 import syncModels from "./syncModels.js";
 
-import profilesRouter from "./features/twoProfiles/routes/profilesRoutes.js";
 import dealRouter from "./features/deals/routes/dealsRoute.js";
 import biddingRouter from "./features/bidding/routes/biddingRoute.js";
 import bidManagementRouter from "./features/bid_management/routes/bidManagementRoutes.js";
+import requestDealmakerRouter from "./features/request-dealmaker/routes/requestDealmakerRoute.js";
 import dotenv from "dotenv";
 import cors from "cors";
 dotenv.config();
@@ -28,11 +28,10 @@ app.use(express.json());
 app.use("/api/auth", authRouter);
 app.use("/api/user-profile", userProfileRouter);
 
-app.use("/api/profiles", profilesRouter);
-
 app.use("/api/deals", dealRouter);
 app.use("/api/bidding", biddingRouter);
 app.use("/api/bid-management", bidManagementRouter);
+app.use("/api/request-dealmaker", requestDealmakerRouter);
 
 // Sync models before starting server
 (async () => {

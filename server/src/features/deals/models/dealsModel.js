@@ -1,5 +1,6 @@
 import { DataTypes } from "sequelize";
 import { db_connection } from "../../../../config/db_connection.js";
+import { userModel } from "../../auth/models/authModel.js";
 
 // Updated id field to auto-increment
 const dealModel = db_connection.define(
@@ -51,5 +52,17 @@ const dealModel = db_connection.define(
     timestamps: true, // Enables createdAt and updatedAt fields
   }
 );
+
+dealModel.belongsTo(userModel, {
+  foreignKey: "dealer_creator",
+  as: "creator",
+  targetKey: "username",
+});
+
+dealModel.belongsTo(userModel, {
+  foreignKey: "dealer_joined",
+  as: "joined_user",
+  targetKey: "username",
+});
 
 export default dealModel;

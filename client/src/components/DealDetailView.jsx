@@ -3,9 +3,11 @@ import { selectBid } from "../api/bidManagement";
 import { getUserProfile } from "../api/userData";
 import { useEffect, useState } from "react";
 import Message from "./Message";
+import RequestDealmakerModal from "./RequestDealmakerModal";
 
 const DealDetailView = ({ deal, bids = [], onBack, onBidSelected }) => {
   const [username, setUsername] = useState(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
   useEffect(() => {
     const fetchUsername = async () => {
@@ -34,6 +36,10 @@ const DealDetailView = ({ deal, bids = [], onBack, onBidSelected }) => {
 
   const canSelectBid =
     deal.dealer_creator === username || deal.dealer_joined === username;
+
+  const canRequestDealmaker =
+    !deal.dealmaker &&
+    (deal.dealer_creator === username || deal.dealer_joined === username);
 
   return (
     <div className="p-6 bg-white rounded-lg shadow-lg max-w-4xl mx-auto">
@@ -87,6 +93,17 @@ const DealDetailView = ({ deal, bids = [], onBack, onBidSelected }) => {
             )}
           </div>
         </div>
+        {/* Request Dealmaker Button */}
+        {canRequestDealmaker && (
+          <div className="mt-6 text-center">
+            <button
+              onClick={() => setIsModalOpen(true)}
+              className="bg-blue-500 text-white px-6 py-2 rounded-lg hover:bg-blue-600 transition-colors"
+            >
+              Request a Dealmaker
+            </button>
+          </div>
+        )}
       </div>
 
       {/* Bids Section - Conditionally Rendered */}
@@ -170,6 +187,12 @@ const DealDetailView = ({ deal, bids = [], onBack, onBidSelected }) => {
         </div>
       ) : (
         <Message />
+      )}
+      {isModalOpen && (
+        <RequestDealmakerModal
+          dealId={deal.id}
+          onClose={() => setIsModalOpen(false)}
+        />
       )}
     </div>
   );

@@ -2,11 +2,15 @@ import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import axiosInstance from "../api/axiosInstance";
 import DealDetailView from "../components/DealDetailView";
+import { getMyDealmakerRequests } from "../api/requestDealmaker";
+import ViewRequestsModal from "../components/ViewRequestsModal";
 
 const DealmakerPanelPage = () => {
   const [deals, setDeals] = useState([]);
   const [selectedDeal, setSelectedDeal] = useState(null);
   const [view, setView] = useState("grid"); // 'grid' or 'detail'
+  const [isRequestsModalOpen, setIsRequestsModalOpen] = useState(false);
+  const [requests, setRequests] = useState([]);
 
   const fetchDealmakerDeals = async () => {
     try {
@@ -15,6 +19,21 @@ const DealmakerPanelPage = () => {
     } catch (error) {
       console.error("Failed to fetch dealmaker deals:", error);
     }
+  };
+
+  const handleViewRequests = async () => {
+    try {
+      const data = await getMyDealmakerRequests();
+      setRequests(data);
+      setIsRequestsModalOpen(true);
+    } catch (error) {
+      console.error("Failed to fetch dealmaker requests:", error);
+    }
+  };
+
+  const handleRequestAccepted = () => {
+    setIsRequestsModalOpen(false); // Close the modal
+    fetchDealmakerDeals(); // Refresh the deals list
   };
 
   useEffect(() => {
@@ -44,7 +63,15 @@ const DealmakerPanelPage = () => {
 
   return (
     <div className="container mx-auto p-4">
-      <h1 className="text-2xl font-bold mb-4">Dealmaker Panel</h1>
+      <div className="flex justify-between items-center mb-4">
+        <h1 className="text-2xl font-bold">Dealmaker Panel</h1>
+        <button
+          onClick={handleViewRequests}
+          className="bg-indigo-500 text-white py-2 px-4 rounded hover:bg-indigo-600"
+        >
+          View Incoming Requests
+        </button>
+      </div>
       <motion.div
         layout
         className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"
@@ -69,6 +96,13 @@ const DealmakerPanelPage = () => {
           </motion.div>
         ))}
       </motion.div>
+      {isRequestsModalOpen && (
+        <ViewRequestsModal
+          requests={requests}
+          onClose={() => setIsRequestsModalOpen(false)}
+          onAccept={handleRequestAccepted}
+        />
+      )}
     </div>
   );
 };

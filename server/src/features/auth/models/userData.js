@@ -5,6 +5,10 @@ import { userModel } from "./authModel.js";
 export const userDataModel = db_connection.define(
   "UserData",
   {
+    profile_picture: {
+      type: DataTypes.STRING,
+      allowNull: true,
+    },
     date_of_birth: {
       type: DataTypes.DATEONLY,
       allowNull: true,
@@ -33,3 +37,5 @@ userDataModel.belongsTo(userModel, {
   foreignKey: "username",
   targetKey: "username",
 });
+
+export default userDataModel;

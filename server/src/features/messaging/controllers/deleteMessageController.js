@@ -1,5 +1,5 @@
 import Message from "../models/messageModel.js";
-import userModel from "../../auth/models/userData.js";
+import { userModel } from "../../auth/models/authModel.js";
 
 export const deleteMessage = async (req, res) => {
   try {

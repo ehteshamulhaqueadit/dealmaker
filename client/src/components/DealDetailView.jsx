@@ -4,10 +4,12 @@ import { getUserProfile } from "../api/userData";
 import { useEffect, useState } from "react";
 import Message from "./Message";
 import RequestDealmakerModal from "./RequestDealmakerModal";
+import DisputeModal from "./DisputeModal";
 
 const DealDetailView = ({ deal, bids = [], onBack, onBidSelected }) => {
   const [username, setUsername] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isDisputeModalOpen, setIsDisputeModalOpen] = useState(false);
 
   useEffect(() => {
     const fetchUsername = async () => {
@@ -205,6 +207,29 @@ const DealDetailView = ({ deal, bids = [], onBack, onBidSelected }) => {
               coordinate with your dealmaker and counterpart.
             </p>
           </div>
+
+          {/* Dispute Management Button */}
+          <div className="mb-4">
+            <button
+              onClick={() => setIsDisputeModalOpen(true)}
+              className="bg-orange-600 text-white px-4 py-2 rounded-lg hover:bg-orange-700 transition-colors flex items-center gap-2"
+            >
+              <svg
+                className="w-4 h-4"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.664-.833-2.464 0L4.35 16.5c-.77.833.192 2.5 1.732 2.5z"
+                />
+              </svg>
+              Manage Disputes
+            </button>
+          </div>
         </div>
       )}
 
@@ -215,6 +240,15 @@ const DealDetailView = ({ deal, bids = [], onBack, onBidSelected }) => {
         <RequestDealmakerModal
           dealId={deal.id}
           onClose={() => setIsModalOpen(false)}
+        />
+      )}
+
+      {isDisputeModalOpen && (
+        <DisputeModal
+          isOpen={isDisputeModalOpen}
+          onClose={() => setIsDisputeModalOpen(false)}
+          dealId={deal.id}
+          deal={deal}
         />
       )}
     </div>

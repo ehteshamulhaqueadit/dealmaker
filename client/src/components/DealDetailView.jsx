@@ -2,6 +2,7 @@ import React from "react";
 import { selectBid } from "../api/bidManagement";
 import { getUserProfile } from "../api/userData";
 import { markDealComplete } from "../api/progress";
+import { lockEscrow, getEscrowStatus } from "../api/wallet";
 import { useEffect, useState } from "react";
 import Message from "./Message";
 import RequestDealmakerModal from "./RequestDealmakerModal";
@@ -16,6 +17,9 @@ const DealDetailView = ({ deal, bids = [], onBack, onBidSelected }) => {
   const [completionLoading, setCompletionLoading] = useState(false);
   const [completionMessage, setCompletionMessage] = useState("");
   const [updatedDeal, setUpdatedDeal] = useState(deal);
+  const [escrowStatus, setEscrowStatus] = useState(null);
+  const [escrowLoading, setEscrowLoading] = useState(false);
+  const [escrowMessage, setEscrowMessage] = useState("");
 
   useEffect(() => {
     const fetchUsername = async () => {
@@ -28,6 +32,20 @@ const DealDetailView = ({ deal, bids = [], onBack, onBidSelected }) => {
     };
     fetchUsername();
   }, []);
+
+  useEffect(() => {
+    const fetchEscrowStatus = async () => {
+      if (updatedDeal.dealmaker) {
+        try {
+          const status = await getEscrowStatus(updatedDeal.id);
+          setEscrowStatus(status);
+        } catch (error) {
+          console.error("Failed to fetch escrow status", error);
+        }
+      }
+    };
+    fetchEscrowStatus();
+  }, [updatedDeal.dealmaker, updatedDeal.id]);
 
   const handleSelectBid = async (bidId) => {
     try {
@@ -63,6 +81,29 @@ const DealDetailView = ({ deal, bids = [], onBack, onBidSelected }) => {
       setTimeout(() => setCompletionMessage(""), 5000);
     } finally {
       setCompletionLoading(false);
+    }
+  };
+
+  const handleLockEscrow = async () => {
+    if (escrowLoading) return;
+
+    setEscrowLoading(true);
+    try {
+      const response = await lockEscrow(updatedDeal.id);
+      setEscrowMessage(response.message);
+      setEscrowStatus(response.escrowStatus);
+
+      // Clear message after 5 seconds
+      setTimeout(() => setEscrowMessage(""), 5000);
+    } catch (error) {
+      console.error("Failed to lock escrow", error);
+      setEscrowMessage(
+        error.response?.data?.message ||
+          "Failed to lock escrow. Please try again."
+      );
+      setTimeout(() => setEscrowMessage(""), 5000);
+    } finally {
+      setEscrowLoading(false);
     }
   };
 
@@ -154,6 +195,142 @@ const DealDetailView = ({ deal, bids = [], onBack, onBidSelected }) => {
             )}
           </div>
         </div>
+
+        {/* Escrow Payment Section */}
+        {updatedDeal.dealmaker && (
+          <div className="mt-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+            <h3 className="text-xl font-semibold mb-3 text-blue-800">
+              💰 Escrow Payment Status
+            </h3>
+
+            {escrowStatus ? (
+              <div className="space-y-3">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="p-3 bg-white rounded border">
+                    <p className="text-sm text-gray-600">Escrow Amount</p>
+                    <p className="text-lg font-bold text-green-600">
+                      ${escrowStatus.amount || updatedDeal.budget / 2}
+                    </p>
+                  </div>
+                  <div className="p-3 bg-white rounded border">
+                    <p className="text-sm text-gray-600">Status</p>
+                    <p
+                      className={`text-lg font-bold ${
+                        escrowStatus.status === "locked"
+                          ? "text-yellow-600"
+                          : escrowStatus.status === "completed"
+                          ? "text-green-600"
+                          : "text-red-600"
+                      }`}
+                    >
+                      {escrowStatus.status?.charAt(0).toUpperCase() +
+                        escrowStatus.status?.slice(1) || "Pending"}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <p className="text-sm">
+                    <strong>Creator Payment:</strong>{" "}
+                    <span
+                      className={`${
+                        escrowStatus.creator_paid
+                          ? "text-green-600"
+                          : "text-red-600"
+                      }`}
+                    >
+                      {escrowStatus.creator_paid ? "✅ Paid" : "❌ Not Paid"}
+                    </span>
+                  </p>
+                  <p className="text-sm">
+                    <strong>Counterpart Payment:</strong>{" "}
+                    <span
+                      className={`${
+                        escrowStatus.counterpart_paid
+                          ? "text-green-600"
+                          : "text-red-600"
+                      }`}
+                    >
+                      {escrowStatus.counterpart_paid
+                        ? "✅ Paid"
+                        : "❌ Not Paid"}
+                    </span>
+                  </p>
+                </div>
+
+                {/* Payment Action Button */}
+                {escrowStatus.status !== "completed" && (
+                  <div className="mt-4">
+                    {((isCurrentUserCreator && !escrowStatus.creator_paid) ||
+                      (isCurrentUserCounterpart &&
+                        !escrowStatus.counterpart_paid)) && (
+                      <button
+                        onClick={handleLockEscrow}
+                        disabled={escrowLoading}
+                        className={`w-full py-3 px-4 rounded-lg font-medium ${
+                          escrowLoading
+                            ? "bg-gray-400 cursor-not-allowed"
+                            : "bg-blue-600 hover:bg-blue-700"
+                        } text-white transition-colors`}
+                      >
+                        {escrowLoading
+                          ? "Processing..."
+                          : `Pay Escrow ($${updatedDeal.budget / 2})`}
+                      </button>
+                    )}
+
+                    {escrowStatus.creator_paid &&
+                      escrowStatus.counterpart_paid && (
+                        <div className="text-center p-3 bg-green-100 text-green-800 rounded-md">
+                          🎉 Both parties have paid! Money is now locked in
+                          escrow until deal completion.
+                        </div>
+                      )}
+                  </div>
+                )}
+
+                {escrowStatus.status === "completed" && (
+                  <div className="text-center p-3 bg-green-100 text-green-800 rounded-md">
+                    ✅ Escrow payment has been released to the dealmaker!
+                  </div>
+                )}
+              </div>
+            ) : (
+              <div className="text-center">
+                <p className="text-gray-600 mb-4">
+                  Once both parties pay ${updatedDeal.budget / 2} each into
+                  escrow, the deal will be protected and no one can leave.
+                </p>
+                <button
+                  onClick={handleLockEscrow}
+                  disabled={escrowLoading}
+                  className={`py-3 px-6 rounded-lg font-medium ${
+                    escrowLoading
+                      ? "bg-gray-400 cursor-not-allowed"
+                      : "bg-blue-600 hover:bg-blue-700"
+                  } text-white transition-colors`}
+                >
+                  {escrowLoading
+                    ? "Processing..."
+                    : `Pay Escrow ($${updatedDeal.budget / 2})`}
+                </button>
+              </div>
+            )}
+
+            {escrowMessage && (
+              <div
+                className={`mt-3 p-3 rounded-md ${
+                  escrowMessage.includes("success") ||
+                  escrowMessage.includes("paid")
+                    ? "bg-green-100 text-green-800"
+                    : "bg-red-100 text-red-800"
+                }`}
+              >
+                {escrowMessage}
+              </div>
+            )}
+          </div>
+        )}
         {/* Request Dealmaker Button */}
         {canRequestDealmaker && (
           <div className="mt-6 text-center">

@@ -4,6 +4,9 @@ import { userModel, tempUserModel } from "./features/auth/models/authModel.js"; 
 import Message from "./features/messaging/models/messageModel.js";
 import Dispute from "./features/disputes/models/disputeModel.js";
 import Progress from "./features/progress/models/progressModel.js";
+import Wallet from "./features/wallet/models/walletModel.js";
+import Transaction from "./features/wallet/models/transactionModel.js";
+import Escrow from "./features/wallet/models/escrowModel.js";
 
 async function syncModels() {
   try {

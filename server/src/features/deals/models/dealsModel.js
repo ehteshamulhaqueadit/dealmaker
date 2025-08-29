@@ -66,6 +66,21 @@ const dealModel = db_connection.define(
       type: DataTypes.DATE,
       allowNull: true,
     },
+    is_protected: {
+      type: DataTypes.BOOLEAN,
+      defaultValue: false,
+      allowNull: false,
+    },
+    escrow_locked: {
+      type: DataTypes.BOOLEAN,
+      defaultValue: false,
+      allowNull: false,
+    },
+    escrow_amount: {
+      type: DataTypes.DECIMAL(10, 2),
+      defaultValue: 0.0,
+      allowNull: false,
+    },
   },
   {
     timestamps: true, // Enables createdAt and updatedAt fields

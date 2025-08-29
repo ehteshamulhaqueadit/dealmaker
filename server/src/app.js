@@ -10,6 +10,7 @@ import requestDealmakerRouter from "./features/request-dealmaker/routes/requestD
 import messageRouter from "./features/messaging/routes/messageRoutes.js";
 import disputeRouter from "./features/disputes/routes/disputeRoutes.js";
 import progressRouter from "./features/progress/routes/progressRoutes.js";
+import walletRouter from "./features/wallet/routes/walletRoutes.js";
 import dotenv from "dotenv";
 import cors from "cors";
 dotenv.config();
@@ -38,6 +39,7 @@ app.use("/api/request-dealmaker", requestDealmakerRouter);
 app.use("/api/messages", messageRouter);
 app.use("/api/disputes", disputeRouter);
 app.use("/api/progress", progressRouter);
+app.use("/api/wallet", walletRouter);
 
 // Sync models before starting server
 (async () => {

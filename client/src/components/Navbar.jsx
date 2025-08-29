@@ -9,6 +9,7 @@ export default function Navbar({ onAuthButtonClick }) {
     { name: "Home", href: "/" },
     { name: "Deals", href: "/deals" },
     { name: "Dealmaker-Panel", href: "/dealmaker-panel" },
+    { name: "Deposit", href: "/deposit" },
     { name: "Profile", href: "/profile" },
     { name: "About", href: "/about" },
   ]; // Updated Profile link to point to /profile

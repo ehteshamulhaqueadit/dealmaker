@@ -21,7 +21,7 @@ const dealModel = db_connection.define(
     },
     dealer_creator: {
       type: DataTypes.STRING,
-      allowNull: false,
+      allowNull: true,
     },
     dealer_joined: {
       type: DataTypes.STRING,

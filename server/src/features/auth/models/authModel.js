@@ -4,10 +4,15 @@ import { DataTypes } from "sequelize";
 const userModel = db_connection.define(
   "User",
   {
+    id: {
+      type: DataTypes.INTEGER,
+      primaryKey: true,
+      autoIncrement: true,
+    },
     username: {
       type: DataTypes.STRING,
       allowNull: false,
-      primaryKey: true,
+      unique: true,
     },
     email: {
       type: DataTypes.STRING,

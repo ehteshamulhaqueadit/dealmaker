@@ -1,6 +1,7 @@
 import { db_connection, testConnection } from "../config/db_connection.js";
 
 import { userModel, tempUserModel } from "./features/auth/models/authModel.js"; // Import all models so Sequelize registers them
+import Message from "./features/messaging/models/messageModel.js";
 
 async function syncModels() {
   try {

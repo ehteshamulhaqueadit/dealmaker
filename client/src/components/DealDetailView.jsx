@@ -107,7 +107,7 @@ const DealDetailView = ({ deal, bids = [], onBack, onBidSelected }) => {
       </div>
 
       {/* Bids Section - Conditionally Rendered */}
-      {!deal.dealmaker ? (
+      {!deal.dealmaker && (
         <div>
           <h2 className="text-2xl font-semibold mb-4 border-t pt-4">Bids</h2>
           {dealBids.length > 0 ? (
@@ -185,9 +185,32 @@ const DealDetailView = ({ deal, bids = [], onBack, onBidSelected }) => {
             </p>
           )}
         </div>
-      ) : (
-        <Message />
       )}
+
+      {/* Deal Finalized Section - Show when dealmaker is assigned */}
+      {deal.dealmaker && (
+        <div className="border-t pt-6 mt-6">
+          <h2 className="text-2xl font-semibold mb-4 text-green-600">
+            Deal Finalized
+          </h2>
+          <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-4">
+            <p className="text-green-800">
+              <strong>Dealmaker:</strong> {deal.dealmaker}
+            </p>
+            <p className="text-green-800">
+              <strong>Final Budget:</strong> ${deal.budget}
+            </p>
+            <p className="text-sm text-green-600 mt-2">
+              This deal has been finalized. Use the messaging section below to
+              coordinate with your dealmaker and counterpart.
+            </p>
+          </div>
+        </div>
+      )}
+
+      {/* Deal Messages - Always show for participants */}
+      <Message dealId={deal.id} />
+
       {isModalOpen && (
         <RequestDealmakerModal
           dealId={deal.id}

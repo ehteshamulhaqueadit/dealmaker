@@ -1,5 +1,7 @@
 import { userDataModel } from "../models/userData.js";
 import { userModel } from "../models/authModel.js";
+import fs from "fs";
+import path from "path";
 // GET user profile info
 export const getUserProfile = async (req, res) => {
   try {
@@ -23,6 +25,7 @@ export const getUserProfile = async (req, res) => {
       createdAt: user.createdAt,
       updatedAt: user.updatedAt,
       profile: {
+        profile_picture: user.profile?.profile_picture || null,
         date_of_birth: user.profile?.date_of_birth || null,
         address: user.profile?.address || null,
         occupation: user.profile?.occupation || null,
@@ -66,5 +69,75 @@ export const updateUserProfile = async (req, res) => {
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: "Failed to update profile" });
+  }
+};
+
+// UPLOAD profile picture
+export const uploadProfilePicture = async (req, res) => {
+  try {
+    const username = req.user.username;
+
+    if (!req.file) {
+      return res.status(400).json({ error: "No file uploaded" });
+    }
+
+    // Get or create user data record
+    const [userData, created] = await userDataModel.findOrCreate({
+      where: { username },
+      defaults: {},
+    });
+
+    // Delete old profile picture if it exists
+    if (userData.profile_picture) {
+      const oldPicturePath = path.join(process.cwd(), userData.profile_picture);
+      if (fs.existsSync(oldPicturePath)) {
+        fs.unlinkSync(oldPicturePath);
+      }
+    }
+
+    // Update with new profile picture path
+    const profilePictureUrl = `/uploads/profile-pictures/${req.file.filename}`;
+    await userData.update({ profile_picture: profilePictureUrl });
+
+    res.status(200).json({
+      success: true,
+      message: "Profile picture uploaded successfully",
+      profilePictureUrl: profilePictureUrl,
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Failed to upload profile picture" });
+  }
+};
+
+// DELETE profile picture
+export const deleteProfilePicture = async (req, res) => {
+  try {
+    const username = req.user.username;
+
+    const userData = await userDataModel.findOne({
+      where: { username },
+    });
+
+    if (!userData || !userData.profile_picture) {
+      return res.status(404).json({ error: "No profile picture found" });
+    }
+
+    // Delete file from filesystem
+    const picturePath = path.join(process.cwd(), userData.profile_picture);
+    if (fs.existsSync(picturePath)) {
+      fs.unlinkSync(picturePath);
+    }
+
+    // Update database
+    await userData.update({ profile_picture: null });
+
+    res.status(200).json({
+      success: true,
+      message: "Profile picture deleted successfully",
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Failed to delete profile picture" });
   }
 };

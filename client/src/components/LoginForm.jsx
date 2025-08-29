@@ -2,7 +2,7 @@ import React, { useState, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { login } from "../api/auth";
 import PasswordResetDialog from "./PasswordResetDialog";
-import Cookies from "js-cookie"; // Import js-cookie
+import { useAuth } from "../contexts/AuthContext";
 
 function LoginForm({ onSuccess }) {
   const [form, setForm] = useState({ username: "", password: "" });
@@ -10,6 +10,7 @@ function LoginForm({ onSuccess }) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showResetDialog, setShowResetDialog] = useState(false);
   const forgotPasswordRef = useRef(null);
+  const { login: authLogin } = useAuth();
 
   const handleChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value });
@@ -24,11 +25,9 @@ function LoginForm({ onSuccess }) {
       // Perform the login API request
       const response = await login(form);
       console.log("Login response:", response);
-      // If successful, store the token in a cookie
-      Cookies.set("auth_token", response.token, {
-        expires: 7,
-        secure: true,
-      }); // Cookie will expire in 7 days
+
+      // Use the auth hook to handle login (stores token and updates state)
+      authLogin(response.token, response.user);
 
       // Call onSuccess to close the modal
       onSuccess();

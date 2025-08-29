@@ -47,6 +47,25 @@ const dealModel = db_connection.define(
       type: DataTypes.UUID,
       allowNull: true,
     },
+    is_completed: {
+      type: DataTypes.BOOLEAN,
+      defaultValue: false,
+      allowNull: false,
+    },
+    completed_by_creator: {
+      type: DataTypes.BOOLEAN,
+      defaultValue: false,
+      allowNull: false,
+    },
+    completed_by_counterpart: {
+      type: DataTypes.BOOLEAN,
+      defaultValue: false,
+      allowNull: false,
+    },
+    completion_date: {
+      type: DataTypes.DATE,
+      allowNull: true,
+    },
   },
   {
     timestamps: true, // Enables createdAt and updatedAt fields

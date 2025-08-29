@@ -9,6 +9,7 @@ import bidManagementRouter from "./features/bid_management/routes/bidManagementR
 import requestDealmakerRouter from "./features/request-dealmaker/routes/requestDealmakerRoute.js";
 import messageRouter from "./features/messaging/routes/messageRoutes.js";
 import disputeRouter from "./features/disputes/routes/disputeRoutes.js";
+import progressRouter from "./features/progress/routes/progressRoutes.js";
 import dotenv from "dotenv";
 import cors from "cors";
 dotenv.config();
@@ -36,6 +37,7 @@ app.use("/api/bid-management", bidManagementRouter);
 app.use("/api/request-dealmaker", requestDealmakerRouter);
 app.use("/api/messages", messageRouter);
 app.use("/api/disputes", disputeRouter);
+app.use("/api/progress", progressRouter);
 
 // Sync models before starting server
 (async () => {

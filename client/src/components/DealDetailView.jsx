@@ -1,15 +1,21 @@
 import React from "react";
 import { selectBid } from "../api/bidManagement";
 import { getUserProfile } from "../api/userData";
+import { markDealComplete } from "../api/progress";
 import { useEffect, useState } from "react";
 import Message from "./Message";
 import RequestDealmakerModal from "./RequestDealmakerModal";
 import DisputeModal from "./DisputeModal";
+import ProgressModal from "./ProgressModal";
 
 const DealDetailView = ({ deal, bids = [], onBack, onBidSelected }) => {
   const [username, setUsername] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isDisputeModalOpen, setIsDisputeModalOpen] = useState(false);
+  const [isProgressModalOpen, setIsProgressModalOpen] = useState(false);
+  const [completionLoading, setCompletionLoading] = useState(false);
+  const [completionMessage, setCompletionMessage] = useState("");
+  const [updatedDeal, setUpdatedDeal] = useState(deal);
 
   useEffect(() => {
     const fetchUsername = async () => {
@@ -33,15 +39,58 @@ const DealDetailView = ({ deal, bids = [], onBack, onBidSelected }) => {
     }
   };
 
+  const handleMarkComplete = async () => {
+    if (completionLoading) return;
+
+    setCompletionLoading(true);
+    try {
+      const response = await markDealComplete(updatedDeal.id);
+      setCompletionMessage(response.message);
+      setUpdatedDeal(response.deal);
+
+      if (response.isCompleted) {
+        // If deal is completed, update the parent component
+        onBidSelected(response.deal);
+      }
+
+      // Clear message after 5 seconds
+      setTimeout(() => setCompletionMessage(""), 5000);
+    } catch (error) {
+      console.error("Failed to mark deal complete", error);
+      setCompletionMessage(
+        "Failed to mark deal as complete. Please try again."
+      );
+      setTimeout(() => setCompletionMessage(""), 5000);
+    } finally {
+      setCompletionLoading(false);
+    }
+  };
+
   // Filter bids for the current deal
-  const dealBids = bids.filter((bid) => bid.dealId === deal.id);
+  const dealBids = bids.filter((bid) => bid.dealId === updatedDeal.id);
 
   const canSelectBid =
-    deal.dealer_creator === username || deal.dealer_joined === username;
+    updatedDeal.dealer_creator === username ||
+    updatedDeal.dealer_joined === username;
 
   const canRequestDealmaker =
-    !deal.dealmaker &&
-    (deal.dealer_creator === username || deal.dealer_joined === username);
+    !updatedDeal.dealmaker &&
+    (updatedDeal.dealer_creator === username ||
+      updatedDeal.dealer_joined === username);
+
+  const canFinishDeal =
+    updatedDeal.dealmaker &&
+    !updatedDeal.is_completed &&
+    (updatedDeal.dealer_creator === username ||
+      updatedDeal.dealer_joined === username);
+
+  const isCreatorCompleted = updatedDeal.completed_by_creator;
+  const isCounterpartCompleted = updatedDeal.completed_by_counterpart;
+  const isCurrentUserCreator = updatedDeal.dealer_creator === username;
+  const isCurrentUserCounterpart = updatedDeal.dealer_joined === username;
+  const hasCurrentUserCompleted =
+    (isCurrentUserCreator && isCreatorCompleted) ||
+    (isCurrentUserCounterpart && isCounterpartCompleted);
 
   return (
     <div className="p-6 bg-white rounded-lg shadow-lg max-w-4xl mx-auto">
@@ -54,22 +103,22 @@ const DealDetailView = ({ deal, bids = [], onBack, onBidSelected }) => {
 
       {/* Deal Details */}
       <div className="mb-8">
-        <h1 className="text-4xl font-bold mb-2">{deal.title}</h1>
-        <p className="text-lg text-gray-800 mb-4">{deal.description}</p>
+        <h1 className="text-4xl font-bold mb-2">{updatedDeal.title}</h1>
+        <p className="text-lg text-gray-800 mb-4">{updatedDeal.description}</p>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-2 text-gray-600 mb-6">
           <span>
-            <strong>Budget:</strong> ${deal.budget}
+            <strong>Budget:</strong> ${updatedDeal.budget}
           </span>
           <span>
-            <strong>Timeline:</strong> {deal.timeline}
+            <strong>Timeline:</strong> {updatedDeal.timeline}
           </span>
           <span>
             <strong>Created:</strong>{" "}
-            {new Date(deal.createdAt).toLocaleString()}
+            {new Date(updatedDeal.createdAt).toLocaleString()}
           </span>
           <span>
             <strong>Last Updated:</strong>{" "}
-            {new Date(deal.updatedAt).toLocaleString()}
+            {new Date(updatedDeal.updatedAt).toLocaleString()}
           </span>
         </div>
 
@@ -79,18 +128,28 @@ const DealDetailView = ({ deal, bids = [], onBack, onBidSelected }) => {
           <div className="space-y-2">
             <p>
               <strong className="font-medium">Deal Creator:</strong>{" "}
-              {deal.dealer_creator}
+              {updatedDeal.dealer_creator}
+              {isCreatorCompleted && (
+                <span className="ml-2 text-green-600 text-sm">
+                  ✅ Marked as Complete
+                </span>
+              )}
             </p>
-            {deal.dealer_joined && (
+            {updatedDeal.dealer_joined && (
               <p>
                 <strong className="font-medium">Deal Counterpart:</strong>{" "}
-                {deal.dealer_joined}
+                {updatedDeal.dealer_joined}
+                {isCounterpartCompleted && (
+                  <span className="ml-2 text-green-600 text-sm">
+                    ✅ Marked as Complete
+                  </span>
+                )}
               </p>
             )}
-            {deal.dealmaker && (
+            {updatedDeal.dealmaker && (
               <p className="p-2 bg-green-100 text-green-800 rounded-md">
                 <strong className="font-bold">Deal Maker:</strong>{" "}
-                {deal.dealmaker}
+                {updatedDeal.dealmaker}
               </p>
             )}
           </div>
@@ -109,20 +168,22 @@ const DealDetailView = ({ deal, bids = [], onBack, onBidSelected }) => {
       </div>
 
       {/* Bids Section - Conditionally Rendered */}
-      {!deal.dealmaker && (
+      {!updatedDeal.dealmaker && (
         <div>
           <h2 className="text-2xl font-semibold mb-4 border-t pt-4">Bids</h2>
           {dealBids.length > 0 ? (
             <div className="space-y-4">
               {dealBids.map((bid) => {
                 const isSelectedByCreator =
-                  deal.selected_bid_by_creator === bid.id;
+                  updatedDeal.selected_bid_by_creator === bid.id;
                 const isSelectedByDealer =
-                  deal.selected_bid_by_dealer === bid.id;
+                  updatedDeal.selected_bid_by_dealer === bid.id;
                 const isFinalized = isSelectedByCreator && isSelectedByDealer;
                 const isCurrentlySelectedByUser =
-                  (deal.dealer_creator === username && isSelectedByCreator) ||
-                  (deal.dealer_joined === username && isSelectedByDealer);
+                  (updatedDeal.dealer_creator === username &&
+                    isSelectedByCreator) ||
+                  (updatedDeal.dealer_joined === username &&
+                    isSelectedByDealer);
 
                 let borderColor = "border-transparent";
                 if (isFinalized) {
@@ -148,12 +209,13 @@ const DealDetailView = ({ deal, bids = [], onBack, onBidSelected }) => {
                       <div className="flex space-x-2 mt-2">
                         {isSelectedByCreator && (
                           <span className="text-xs bg-blue-200 text-blue-800 px-2 py-1 rounded-full">
-                            Selected by Creator ({deal.dealer_creator})
+                            Selected by Creator ({updatedDeal.dealer_creator})
                           </span>
                         )}
                         {isSelectedByDealer && (
                           <span className="text-xs bg-yellow-200 text-yellow-800 px-2 py-1 rounded-full">
-                            Selected by Dealer ({deal.dealer_joined})
+                            Selected by Counterpart ({updatedDeal.dealer_joined}
+                            )
                           </span>
                         )}
                       </div>
@@ -190,29 +252,118 @@ const DealDetailView = ({ deal, bids = [], onBack, onBidSelected }) => {
       )}
 
       {/* Deal Finalized Section - Show when dealmaker is assigned */}
-      {deal.dealmaker && (
+      {updatedDeal.dealmaker && (
         <div className="border-t pt-6 mt-6">
-          <h2 className="text-2xl font-semibold mb-4 text-green-600">
-            Deal Finalized
-          </h2>
-          <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-4">
-            <p className="text-green-800">
-              <strong>Dealmaker:</strong> {deal.dealmaker}
-            </p>
-            <p className="text-green-800">
-              <strong>Final Budget:</strong> ${deal.budget}
-            </p>
-            <p className="text-sm text-green-600 mt-2">
-              This deal has been finalized. Use the messaging section below to
-              coordinate with your dealmaker and counterpart.
-            </p>
-          </div>
+          {updatedDeal.is_completed ? (
+            <div>
+              <h2 className="text-2xl font-semibold mb-4 text-purple-600">
+                Deal Completed ✅
+              </h2>
+              <div className="bg-purple-50 border border-purple-200 rounded-lg p-4 mb-4">
+                <p className="text-purple-800">
+                  <strong>Dealmaker:</strong> {updatedDeal.dealmaker}
+                </p>
+                <p className="text-purple-800">
+                  <strong>Final Budget:</strong> ${updatedDeal.budget}
+                </p>
+                <p className="text-purple-800">
+                  <strong>Completed:</strong>{" "}
+                  {new Date(updatedDeal.completion_date).toLocaleString()}
+                </p>
+                <p className="text-sm text-purple-600 mt-2">
+                  🎉 This deal has been successfully completed by both parties!
+                </p>
+              </div>
+            </div>
+          ) : (
+            <div>
+              <h2 className="text-2xl font-semibold mb-4 text-green-600">
+                Deal Finalized
+              </h2>
+              <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-4">
+                <p className="text-green-800">
+                  <strong>Dealmaker:</strong> {updatedDeal.dealmaker}
+                </p>
+                <p className="text-green-800">
+                  <strong>Final Budget:</strong> ${updatedDeal.budget}
+                </p>
+                <p className="text-sm text-green-600 mt-2">
+                  This deal has been finalized. Use the tools below to track
+                  progress and coordinate.
+                </p>
+              </div>
 
-          {/* Dispute Management Button */}
-          <div className="mb-4">
+              {/* Completion Status */}
+              {(isCreatorCompleted || isCounterpartCompleted) && (
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-4">
+                  <h4 className="font-medium text-blue-800 mb-2">
+                    Completion Status:
+                  </h4>
+                  <div className="space-y-1 text-sm">
+                    <p
+                      className={
+                        isCreatorCompleted ? "text-green-700" : "text-gray-600"
+                      }
+                    >
+                      Creator ({updatedDeal.dealer_creator}):{" "}
+                      {isCreatorCompleted ? "✅ Completed" : "⏳ Pending"}
+                    </p>
+                    <p
+                      className={
+                        isCounterpartCompleted
+                          ? "text-green-700"
+                          : "text-gray-600"
+                      }
+                    >
+                      Counterpart ({updatedDeal.dealer_joined}):{" "}
+                      {isCounterpartCompleted ? "✅ Completed" : "⏳ Pending"}
+                    </p>
+                  </div>
+                </div>
+              )}
+
+              {/* Completion Message */}
+              {completionMessage && (
+                <div
+                  className={`p-3 rounded-lg mb-4 ${
+                    completionMessage.includes("Failed")
+                      ? "bg-red-100 border border-red-400 text-red-700"
+                      : "bg-green-100 border border-green-400 text-green-700"
+                  }`}
+                >
+                  {completionMessage}
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Action Buttons */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-4">
+            {/* Progress Tracking Button */}
+            <button
+              onClick={() => setIsProgressModalOpen(true)}
+              className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors flex items-center justify-center gap-2"
+            >
+              <svg
+                className="w-4 h-4"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"
+                />
+              </svg>
+              Track Progress
+            </button>
+
+            {/* Dispute Management Button */}
             <button
               onClick={() => setIsDisputeModalOpen(true)}
-              className="bg-orange-600 text-white px-4 py-2 rounded-lg hover:bg-orange-700 transition-colors flex items-center gap-2"
+              className="bg-orange-600 text-white px-4 py-2 rounded-lg hover:bg-orange-700 transition-colors flex items-center justify-center gap-2"
             >
               <svg
                 className="w-4 h-4"
@@ -229,16 +380,72 @@ const DealDetailView = ({ deal, bids = [], onBack, onBidSelected }) => {
               </svg>
               Manage Disputes
             </button>
+
+            {/* Finish Deal Button */}
+            {canFinishDeal && (
+              <button
+                onClick={handleMarkComplete}
+                disabled={completionLoading || hasCurrentUserCompleted}
+                className={`px-4 py-2 rounded-lg transition-colors flex items-center justify-center gap-2 ${
+                  hasCurrentUserCompleted
+                    ? "bg-gray-400 text-gray-600 cursor-not-allowed"
+                    : completionLoading
+                    ? "bg-purple-400 text-white cursor-wait"
+                    : "bg-purple-600 text-white hover:bg-purple-700"
+                }`}
+              >
+                {completionLoading ? (
+                  <>
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                    Processing...
+                  </>
+                ) : hasCurrentUserCompleted ? (
+                  <>
+                    <svg
+                      className="w-4 h-4"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M5 13l4 4L19 7"
+                      />
+                    </svg>
+                    Completed
+                  </>
+                ) : (
+                  <>
+                    <svg
+                      className="w-4 h-4"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+                      />
+                    </svg>
+                    Mark as Finished
+                  </>
+                )}
+              </button>
+            )}
           </div>
         </div>
       )}
 
       {/* Deal Messages - Always show for participants */}
-      <Message dealId={deal.id} />
+      <Message dealId={updatedDeal.id} />
 
       {isModalOpen && (
         <RequestDealmakerModal
-          dealId={deal.id}
+          dealId={updatedDeal.id}
           onClose={() => setIsModalOpen(false)}
         />
       )}
@@ -247,8 +454,17 @@ const DealDetailView = ({ deal, bids = [], onBack, onBidSelected }) => {
         <DisputeModal
           isOpen={isDisputeModalOpen}
           onClose={() => setIsDisputeModalOpen(false)}
-          dealId={deal.id}
-          deal={deal}
+          dealId={updatedDeal.id}
+          deal={updatedDeal}
+        />
+      )}
+
+      {isProgressModalOpen && (
+        <ProgressModal
+          isOpen={isProgressModalOpen}
+          onClose={() => setIsProgressModalOpen(false)}
+          dealId={updatedDeal.id}
+          deal={updatedDeal}
         />
       )}
     </div>

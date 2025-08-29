@@ -1,4 +1,5 @@
 import dealModel from "../models/dealsModel.js";
+import socketService from "../../../utils/socketService.js";
 
 export const joinDealAsDealerController = async (req, res) => {
   const dealId = req.params.id;
@@ -19,6 +20,13 @@ export const joinDealAsDealerController = async (req, res) => {
         .json({ error: "This deal already has a dealer joined" });
     }
     await deal.update({ dealer_joined: username });
+
+    // Get updated deal data
+    const updatedDeal = await dealModel.findByPk(dealId);
+
+    // Broadcast real-time update
+    socketService.broadcastDealUpdate(dealId, updatedDeal, "joined");
+
     res.status(200).json({ message: "User added as dealer successfully" });
   } catch (error) {
     console.log(error);

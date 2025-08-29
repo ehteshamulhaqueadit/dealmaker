@@ -3,12 +3,14 @@ import { selectBid } from "../api/bidManagement";
 import { getUserProfile } from "../api/userData";
 import { markDealComplete } from "../api/progress";
 import { lockEscrow, getEscrowStatus } from "../api/wallet";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import Message from "./Message";
 import RequestDealmakerModal from "./RequestDealmakerModal";
 import DisputeModal from "./DisputeModal";
 import ProgressModal from "./ProgressModal";
 import ReviewModal from "./ReviewModal";
+import { useDealRealtime } from "../hooks/useSocket";
 
 const DealDetailView = ({ deal, bids = [], onBack, onBidSelected }) => {
   const [username, setUsername] = useState(null);
@@ -153,17 +155,110 @@ const DealDetailView = ({ deal, bids = [], onBack, onBidSelected }) => {
     (isCurrentUserCreator && isCreatorCompleted) ||
     (isCurrentUserCounterpart && isCounterpartCompleted);
 
+  // Real-time update handlers
+  const handleDealUpdate = useCallback(
+    (data) => {
+      const { dealId, dealData, updateType } = data;
+
+      if (dealId === updatedDeal.id) {
+        console.log(
+          "Real-time deal update in detail view:",
+          updateType,
+          dealData
+        );
+        setUpdatedDeal((prevDeal) => ({ ...prevDeal, ...dealData }));
+      }
+    },
+    [updatedDeal.id]
+  );
+
+  const handleBidUpdate = useCallback(
+    (data) => {
+      const { dealId, bidData, updateType } = data;
+
+      if (dealId === updatedDeal.id) {
+        console.log(
+          "Real-time bid update in detail view:",
+          updateType,
+          bidData
+        );
+
+        if (updateType === "selected" && bidData.dealFinalized) {
+          // Update deal state when bid is finalized
+          setUpdatedDeal((prevDeal) => ({
+            ...prevDeal,
+            dealmaker: bidData.finalDealmaker,
+            budget: bidData.finalPrice,
+          }));
+        }
+      }
+    },
+    [updatedDeal.id]
+  );
+
+  const handleEscrowUpdate = useCallback(
+    (data) => {
+      const { dealId, escrowData, updateType } = data;
+
+      if (dealId === updatedDeal.id) {
+        console.log(
+          "Real-time escrow update in detail view:",
+          updateType,
+          escrowData
+        );
+        setEscrowStatus((prevStatus) => ({ ...prevStatus, ...escrowData }));
+      }
+    },
+    [updatedDeal.id]
+  );
+
+  const handleProgressUpdate = useCallback(
+    (data) => {
+      const { dealId, progressData, updateType } = data;
+
+      if (dealId === updatedDeal.id) {
+        console.log(
+          "Real-time progress update in detail view:",
+          updateType,
+          progressData
+        );
+        setUpdatedDeal((prevDeal) => ({ ...prevDeal, ...progressData }));
+      }
+    },
+    [updatedDeal.id]
+  );
+
+  // Set up real-time WebSocket connection for this deal
+  useDealRealtime(updatedDeal.id, {
+    onDealUpdate: handleDealUpdate,
+    onBidUpdate: handleBidUpdate,
+    onEscrowUpdate: handleEscrowUpdate,
+    onProgressUpdate: handleProgressUpdate,
+  });
+
   return (
-    <div className="p-6 bg-white rounded-lg shadow-lg max-w-4xl mx-auto">
-      <button
+    <motion.div
+      className="p-6 bg-white rounded-lg shadow-lg max-w-4xl mx-auto"
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.3 }}
+    >
+      <motion.button
         onClick={onBack}
-        className="mb-6 bg-gray-500 text-white px-4 py-2 rounded-lg hover:bg-gray-600"
+        className="mb-6 bg-gray-500 text-white px-4 py-2 rounded-lg hover:bg-gray-600 transition-all duration-200"
+        whileHover={{ scale: 1.02 }}
+        whileTap={{ scale: 0.98 }}
       >
         &larr; Back to Deals
-      </button>
+      </motion.button>
 
       {/* Deal Details */}
-      <div className="mb-8">
+      <motion.div
+        className="mb-8"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ delay: 0.1, duration: 0.3 }}
+      >
         <h1 className="text-4xl font-bold mb-2">{updatedDeal.title}</h1>
         <p className="text-lg text-gray-800 mb-4">{updatedDeal.description}</p>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-2 text-gray-600 mb-6">
@@ -218,7 +313,7 @@ const DealDetailView = ({ deal, bids = [], onBack, onBidSelected }) => {
 
         {/* Escrow Payment Section */}
         {updatedDeal.dealmaker && (
-          <div className="mt-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+          <div className="mt-6 p-4 bg-blue-50 border border-blue-200 rounded-lg transition-all duration-300">
             <h3 className="text-xl font-semibold mb-3 text-blue-800">
               💰 Escrow Payment Status
             </h3>
@@ -226,13 +321,13 @@ const DealDetailView = ({ deal, bids = [], onBack, onBidSelected }) => {
             {escrowStatus ? (
               <div className="space-y-3">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="p-3 bg-white rounded border">
+                  <div className="p-3 bg-white rounded border hover:shadow-md transition-shadow duration-200">
                     <p className="text-sm text-gray-600">Escrow Amount</p>
                     <p className="text-lg font-bold text-green-600">
                       ${escrowStatus.amount || updatedDeal.budget / 2}
                     </p>
                   </div>
-                  <div className="p-3 bg-white rounded border">
+                  <div className="p-3 bg-white rounded border hover:shadow-md transition-shadow duration-200">
                     <p className="text-sm text-gray-600">Status</p>
                     <p
                       className={`text-lg font-bold ${
@@ -287,21 +382,26 @@ const DealDetailView = ({ deal, bids = [], onBack, onBidSelected }) => {
                       <button
                         onClick={handleLockEscrow}
                         disabled={escrowLoading}
-                        className={`w-full py-3 px-4 rounded-lg font-medium ${
+                        className={`w-full py-3 px-4 rounded-lg font-medium transition-all duration-300 transform hover:scale-105 ${
                           escrowLoading
-                            ? "bg-gray-400 cursor-not-allowed"
-                            : "bg-blue-600 hover:bg-blue-700"
-                        } text-white transition-colors`}
+                            ? "bg-gray-400 cursor-not-allowed opacity-70"
+                            : "bg-blue-600 hover:bg-blue-700 hover:shadow-lg"
+                        } text-white`}
                       >
-                        {escrowLoading
-                          ? "Processing..."
-                          : `Pay Escrow ($${updatedDeal.budget / 2})`}
+                        {escrowLoading ? (
+                          <div className="flex items-center justify-center">
+                            <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
+                            Processing...
+                          </div>
+                        ) : (
+                          `Pay Escrow ($${updatedDeal.budget / 2})`
+                        )}
                       </button>
                     )}
 
                     {escrowStatus.creator_paid &&
                       escrowStatus.counterpart_paid && (
-                        <div className="text-center p-3 bg-green-100 text-green-800 rounded-md">
+                        <div className="text-center p-3 bg-green-100 text-green-800 rounded-md border border-green-200 animate-pulse">
                           🎉 Both parties have paid! Money is now locked in
                           escrow until deal completion.
                         </div>
@@ -310,7 +410,7 @@ const DealDetailView = ({ deal, bids = [], onBack, onBidSelected }) => {
                 )}
 
                 {escrowStatus.status === "completed" && (
-                  <div className="text-center p-3 bg-green-100 text-green-800 rounded-md">
+                  <div className="text-center p-3 bg-green-100 text-green-800 rounded-md border border-green-200">
                     ✅ Escrow payment has been released to the dealmaker!
                   </div>
                 )}
@@ -324,31 +424,42 @@ const DealDetailView = ({ deal, bids = [], onBack, onBidSelected }) => {
                 <button
                   onClick={handleLockEscrow}
                   disabled={escrowLoading}
-                  className={`py-3 px-6 rounded-lg font-medium ${
+                  className={`py-3 px-6 rounded-lg font-medium transition-all duration-300 transform hover:scale-105 ${
                     escrowLoading
-                      ? "bg-gray-400 cursor-not-allowed"
-                      : "bg-blue-600 hover:bg-blue-700"
-                  } text-white transition-colors`}
+                      ? "bg-gray-400 cursor-not-allowed opacity-70"
+                      : "bg-blue-600 hover:bg-blue-700 hover:shadow-lg"
+                  } text-white`}
                 >
-                  {escrowLoading
-                    ? "Processing..."
-                    : `Pay Escrow ($${updatedDeal.budget / 2})`}
+                  {escrowLoading ? (
+                    <div className="flex items-center justify-center">
+                      <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
+                      Processing...
+                    </div>
+                  ) : (
+                    `Pay Escrow ($${updatedDeal.budget / 2})`
+                  )}
                 </button>
               </div>
             )}
 
-            {escrowMessage && (
-              <div
-                className={`mt-3 p-3 rounded-md ${
-                  escrowMessage.includes("success") ||
-                  escrowMessage.includes("paid")
-                    ? "bg-green-100 text-green-800"
-                    : "bg-red-100 text-red-800"
-                }`}
-              >
-                {escrowMessage}
-              </div>
-            )}
+            <AnimatePresence>
+              {escrowMessage && (
+                <motion.div
+                  initial={{ opacity: 0, y: -10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -10 }}
+                  transition={{ duration: 0.3 }}
+                  className={`mt-3 p-3 rounded-md ${
+                    escrowMessage.includes("success") ||
+                    escrowMessage.includes("paid")
+                      ? "bg-green-100 text-green-800 border border-green-200"
+                      : "bg-red-100 text-red-800 border border-red-200"
+                  }`}
+                >
+                  {escrowMessage}
+                </motion.div>
+              )}
+            </AnimatePresence>
           </div>
         )}
         {/* Request Dealmaker Button */}
@@ -362,7 +473,7 @@ const DealDetailView = ({ deal, bids = [], onBack, onBidSelected }) => {
             </button>
           </div>
         )}
-      </div>
+      </motion.div>
 
       {/* Bids Section - Conditionally Rendered */}
       {!updatedDeal.dealmaker && (
@@ -520,17 +631,23 @@ const DealDetailView = ({ deal, bids = [], onBack, onBidSelected }) => {
               )}
 
               {/* Completion Message */}
-              {completionMessage && (
-                <div
-                  className={`p-3 rounded-lg mb-4 ${
-                    completionMessage.includes("Failed")
-                      ? "bg-red-100 border border-red-400 text-red-700"
-                      : "bg-green-100 border border-green-400 text-green-700"
-                  }`}
-                >
-                  {completionMessage}
-                </div>
-              )}
+              <AnimatePresence>
+                {completionMessage && (
+                  <motion.div
+                    initial={{ opacity: 0, scale: 0.95 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    exit={{ opacity: 0, scale: 0.95 }}
+                    transition={{ duration: 0.3 }}
+                    className={`p-3 rounded-lg mb-4 ${
+                      completionMessage.includes("Failed")
+                        ? "bg-red-100 border border-red-400 text-red-700"
+                        : "bg-green-100 border border-green-400 text-green-700"
+                    }`}
+                  >
+                    {completionMessage}
+                  </motion.div>
+                )}
+              </AnimatePresence>
             </div>
           )}
 
@@ -539,7 +656,7 @@ const DealDetailView = ({ deal, bids = [], onBack, onBidSelected }) => {
             {/* Progress Tracking Button */}
             <button
               onClick={() => setIsProgressModalOpen(true)}
-              className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors flex items-center justify-center gap-2"
+              className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 hover:shadow-lg transition-all duration-300 transform hover:scale-105 flex items-center justify-center gap-2"
             >
               <svg
                 className="w-4 h-4"
@@ -560,7 +677,7 @@ const DealDetailView = ({ deal, bids = [], onBack, onBidSelected }) => {
             {/* Dispute Management Button */}
             <button
               onClick={() => setIsDisputeModalOpen(true)}
-              className="bg-orange-600 text-white px-4 py-2 rounded-lg hover:bg-orange-700 transition-colors flex items-center justify-center gap-2"
+              className="bg-orange-600 text-white px-4 py-2 rounded-lg hover:bg-orange-700 hover:shadow-lg transition-all duration-300 transform hover:scale-105 flex items-center justify-center gap-2"
             >
               <svg
                 className="w-4 h-4"
@@ -582,7 +699,7 @@ const DealDetailView = ({ deal, bids = [], onBack, onBidSelected }) => {
             {updatedDeal.is_completed ? (
               <button
                 onClick={() => setIsReviewModalOpen(true)}
-                className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors flex items-center justify-center gap-2"
+                className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 hover:shadow-lg transition-all duration-300 transform hover:scale-105 flex items-center justify-center gap-2"
               >
                 <svg
                   className="w-4 h-4"
@@ -605,11 +722,11 @@ const DealDetailView = ({ deal, bids = [], onBack, onBidSelected }) => {
                 <button
                   onClick={handleMarkComplete}
                   disabled={completionLoading || hasCurrentUserCompleted}
-                  className={`px-4 py-2 rounded-lg transition-colors flex items-center justify-center gap-2 ${
+                  className={`px-4 py-2 rounded-lg transition-all duration-300 transform hover:scale-105 hover:shadow-lg flex items-center justify-center gap-2 ${
                     hasCurrentUserCompleted
-                      ? "bg-gray-400 text-gray-600 cursor-not-allowed"
+                      ? "bg-gray-400 text-gray-600 cursor-not-allowed opacity-70"
                       : completionLoading
-                      ? "bg-purple-400 text-white cursor-wait"
+                      ? "bg-purple-400 text-white cursor-wait opacity-80"
                       : "bg-purple-600 text-white hover:bg-purple-700"
                   }`}
                 >
@@ -699,7 +816,7 @@ const DealDetailView = ({ deal, bids = [], onBack, onBidSelected }) => {
           }}
         />
       )}
-    </div>
+    </motion.div>
   );
 };
 

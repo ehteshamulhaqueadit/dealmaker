@@ -62,7 +62,7 @@ function RegisterForm() {
             type="text"
             value={form.full_name}
             onChange={handleChange}
-            className="w-full px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-indigo-200 focus:border-indigo-500 transition"
+            className="w-full px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-indigo-200 focus:border-indigo-500 transition-all duration-300 hover:border-gray-400"
             required
           />
         </div>
@@ -80,7 +80,7 @@ function RegisterForm() {
             type="email"
             value={form.email}
             onChange={handleChange}
-            className="w-full px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-indigo-200 focus:border-indigo-500 transition"
+            className="w-full px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-indigo-200 focus:border-indigo-500 transition-all duration-300 hover:border-gray-400"
             required
           />
         </div>
@@ -98,7 +98,7 @@ function RegisterForm() {
             type="text"
             value={form.username}
             onChange={handleChange}
-            className="w-full px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-indigo-200 focus:border-indigo-500 transition"
+            className="w-full px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-indigo-200 focus:border-indigo-500 transition-all duration-300 hover:border-gray-400"
             required
           />
         </div>
@@ -116,7 +116,7 @@ function RegisterForm() {
             type="password"
             value={form.password}
             onChange={handleChange}
-            className="w-full px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-indigo-200 focus:border-indigo-500 transition"
+            className="w-full px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-indigo-200 focus:border-indigo-500 transition-all duration-300 hover:border-gray-400"
             required
           />
         </div>
@@ -124,11 +124,15 @@ function RegisterForm() {
         <motion.button
           type="submit"
           whileTap={{ scale: 0.98 }}
+          whileHover={{ scale: 1.02 }}
           disabled={isSubmitting}
-          className={`w-full py-2 px-4 bg-indigo-600 hover:bg-indigo-700 text-white font-medium rounded-lg transition ${
+          className={`w-full py-2 px-4 bg-indigo-600 hover:bg-indigo-700 text-white font-medium rounded-lg transition-all duration-300 flex items-center justify-center ${
             isSubmitting ? "opacity-70 cursor-not-allowed" : ""
           }`}
         >
+          {isSubmitting && (
+            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+          )}
           {isSubmitting ? "Creating account..." : "Register"}
         </motion.button>
       </form>

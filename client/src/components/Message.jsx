@@ -1,7 +1,8 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import { sendMessage, getMessagesByDeal, deleteMessage } from "../api/messages";
 import { getUserProfile } from "../api/userData";
 import { motion, AnimatePresence } from "framer-motion";
+import { useDealRealtime } from "../hooks/useSocket";
 
 const Message = ({ dealId }) => {
   const [messages, setMessages] = useState([]);
@@ -55,25 +56,6 @@ const Message = ({ dealId }) => {
     fetchMessages();
   }, [dealId]);
 
-  // Send a new message
-  const handleSendMessage = async (e) => {
-    e.preventDefault();
-    if (!newMessage.trim() || !currentUser) return;
-
-    try {
-      setIsLoading(true);
-      const sentMessage = await sendMessage(dealId, newMessage.trim());
-      setMessages((prev) => [...prev, sentMessage]);
-      setNewMessage("");
-      setError("");
-    } catch (error) {
-      console.error("Failed to send message:", error);
-      setError("Failed to send message");
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
   // Delete a message
   const handleDeleteMessage = async (messageId) => {
     if (!confirm("Are you sure you want to delete this message?")) return;
@@ -85,6 +67,71 @@ const Message = ({ dealId }) => {
     } catch (error) {
       console.error("Failed to delete message:", error);
       setError("Failed to delete message");
+    }
+  };
+
+  // Real-time message update handler
+  const handleMessageUpdate = useCallback(
+    (data) => {
+      const { dealId: messageDealId, messageData, updateType } = data;
+
+      if (messageDealId === dealId) {
+        console.log("Real-time message update:", updateType, messageData);
+
+        if (updateType === "sent") {
+          // Add new message if it's not from the current user (to avoid duplicates)
+          setMessages((prevMessages) => {
+            // Check if message already exists (from current user's send action)
+            const messageExists = prevMessages.find(
+              (msg) => msg.id === messageData.id
+            );
+            if (!messageExists) {
+              return [...prevMessages, messageData];
+            }
+            return prevMessages;
+          });
+        } else if (updateType === "deleted") {
+          // Remove deleted message
+          setMessages((prevMessages) =>
+            prevMessages.filter((msg) => msg.id !== messageData.id)
+          );
+        }
+      }
+    },
+    [dealId]
+  );
+
+  // Set up real-time connection for this deal
+  useDealRealtime(dealId, {
+    onMessageUpdate: handleMessageUpdate,
+  });
+
+  // Updated send message handler to avoid duplicates
+  const handleSendMessage = async (e) => {
+    e.preventDefault();
+    if (!newMessage.trim() || !currentUser) return;
+
+    try {
+      setIsLoading(true);
+      const sentMessage = await sendMessage(dealId, newMessage.trim());
+
+      // Add message locally immediately (real-time will handle other users)
+      setMessages((prev) => {
+        // Check if message already exists to avoid duplicates
+        const messageExists = prev.find((msg) => msg.id === sentMessage.id);
+        if (!messageExists) {
+          return [...prev, sentMessage];
+        }
+        return prev;
+      });
+
+      setNewMessage("");
+      setError("");
+    } catch (error) {
+      console.error("Failed to send message:", error);
+      setError("Failed to send message");
+    } finally {
+      setIsLoading(false);
     }
   };
 

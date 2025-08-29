@@ -1,5 +1,6 @@
 import Deal from "../../deals/models/dealsModel.js";
 import Bidding from "../../bidding/models/biddingModel.js";
+import socketService from "../../../utils/socketService.js";
 
 const selectBidController = async (req, res) => {
   const { dealId, bidId } = req.params;
@@ -60,6 +61,14 @@ const selectBidController = async (req, res) => {
     // If a bid was unselected, the deal is no longer finalized
     deal.dealmaker = null;
 
+    let bidSelectionUpdate = {
+      dealId,
+      bidId,
+      selectedBy: username,
+      isCreator,
+      isJoinedDealer,
+    };
+
     // Check if both have selected the same bid (and it's not null)
     if (
       deal.selected_bid_by_creator &&
@@ -68,6 +77,10 @@ const selectBidController = async (req, res) => {
       const finalBid = await Bidding.findByPk(deal.selected_bid_by_creator);
       deal.dealmaker = finalBid.dealmaker;
       deal.budget = finalBid.price; // Update the deal's budget with the final bid price
+
+      bidSelectionUpdate.dealFinalized = true;
+      bidSelectionUpdate.finalDealmaker = finalBid.dealmaker;
+      bidSelectionUpdate.finalPrice = finalBid.price;
 
       // Delete all bids for this deal
       await Bidding.destroy({
@@ -78,6 +91,14 @@ const selectBidController = async (req, res) => {
     }
 
     await deal.save();
+
+    // Broadcast real-time update
+    socketService.broadcastBidUpdate(dealId, bidSelectionUpdate, "selected");
+
+    // If deal was finalized, also broadcast deal update
+    if (bidSelectionUpdate.dealFinalized) {
+      socketService.broadcastDealUpdate(dealId, deal, "finalized");
+    }
 
     res
       .status(200)

@@ -27,13 +27,18 @@ export default function Navbar({ onAuthButtonClick }) {
           {/* Center - Desktop Navigation */}
           <div className="hidden md:flex items-center space-x-8">
             {navItems.map((item) => (
-              <Link
+              <motion.div
                 key={item.name}
-                to={item.href}
-                className="text-gray-700 hover:text-indigo-600 px-3 py-2 text-sm font-medium transition-colors"
+                whileHover={{ y: -2 }}
+                transition={{ type: "spring", stiffness: 300 }}
               >
-                {item.name}
-              </Link>
+                <Link
+                  to={item.href}
+                  className="text-gray-700 hover:text-indigo-600 px-3 py-2 text-sm font-medium transition-all duration-300 hover:bg-indigo-50 rounded-lg"
+                >
+                  {item.name}
+                </Link>
+              </motion.div>
             ))}
           </div>
 
@@ -93,14 +98,21 @@ export default function Navbar({ onAuthButtonClick }) {
             className="md:hidden overflow-hidden"
           >
             <div className="px-2 pt-2 pb-3 space-y-1 sm:px-3">
-              {navItems.map((item) => (
-                <Link
+              {navItems.map((item, index) => (
+                <motion.div
                   key={item.name}
-                  to={item.href}
-                  className="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-indigo-600 hover:bg-gray-50"
+                  initial={{ opacity: 0, x: -20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: index * 0.1, duration: 0.3 }}
                 >
-                  {item.name}
-                </Link>
+                  <Link
+                    to={item.href}
+                    className="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-indigo-600 hover:bg-gray-50 transition-all duration-300"
+                    onClick={() => setIsMenuOpen(false)}
+                  >
+                    {item.name}
+                  </Link>
+                </motion.div>
               ))}
             </div>
           </motion.div>

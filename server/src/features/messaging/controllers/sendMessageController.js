@@ -1,6 +1,7 @@
 import Message from "../models/messageModel.js";
 import dealModel from "../../deals/models/dealsModel.js";
 import { userModel } from "../../auth/models/authModel.js";
+import socketService from "../../../utils/socketService.js";
 
 export const sendMessage = async (req, res) => {
   try {
@@ -61,6 +62,9 @@ export const sendMessage = async (req, res) => {
         },
       ],
     });
+
+    // Broadcast real-time message update to all users in the deal room
+    socketService.broadcastMessageUpdate(dealId, messageWithSender, "sent");
 
     res.status(201).json(messageWithSender);
   } catch (error) {

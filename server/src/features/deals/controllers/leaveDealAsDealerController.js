@@ -1,5 +1,6 @@
 import dealModel from "../models/dealsModel.js";
 import Escrow from "../../wallet/models/escrowModel.js";
+import socketService from "../../../utils/socketService.js";
 
 //controller for leaving a deal as dealer
 export const leaveDealAsDealerController = async (req, res) => {
@@ -29,6 +30,13 @@ export const leaveDealAsDealerController = async (req, res) => {
     }
 
     await deal.update({ dealer_joined: null });
+
+    // Get updated deal data
+    const updatedDeal = await dealModel.findByPk(dealId);
+
+    // Broadcast real-time update
+    socketService.broadcastDealUpdate(dealId, updatedDeal, "left");
+
     res.status(200).json({ message: "User removed as dealer successfully" });
   } catch (error) {
     console.log(error);

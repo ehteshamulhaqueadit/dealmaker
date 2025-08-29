@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import {
   fetchDeals,
   fetchMyDeals,
@@ -12,6 +12,7 @@ import { createBid, updateBid, deleteBid, getBidByDealId } from "../api/bids";
 import { getEscrowStatus } from "../api/wallet";
 import { motion, AnimatePresence } from "framer-motion";
 import DealDetailView from "../components/DealDetailView";
+import { useGlobalRealtime } from "../hooks/useSocket";
 
 const DealsPage = () => {
   const [deals, setDeals] = useState([]);
@@ -34,6 +35,7 @@ const DealsPage = () => {
   const [currentBid, setCurrentBid] = useState(null); // To hold the entire bid object for updates
   const [bidPrice, setBidPrice] = useState("");
   const [selectedDealForView, setSelectedDealForView] = useState(null); // State for the detailed view
+  const [loading, setLoading] = useState(true);
 
   const loadDeals = async () => {
     try {
@@ -78,6 +80,132 @@ const DealsPage = () => {
     }
   };
 
+  // Real-time update handlers
+  const handleDealUpdate = useCallback((data) => {
+    const { dealId, dealData, updateType } = data;
+
+    console.log("Real-time deal update:", updateType, dealData);
+
+    setDeals((prevDeals) => {
+      switch (updateType) {
+        case "created":
+          // Add new deal if it doesn't exist
+          if (!prevDeals.find((deal) => deal.id === dealData.id)) {
+            return [...prevDeals, dealData];
+          }
+          return prevDeals;
+
+        case "joined":
+        case "left":
+        case "dealmaker-assigned":
+        case "finalized":
+        case "updated":
+          // Update existing deal
+          return prevDeals.map((deal) =>
+            deal.id === dealId ? { ...deal, ...dealData } : deal
+          );
+
+        case "deleted":
+          // Remove deal
+          return prevDeals.filter((deal) => deal.id !== dealId);
+
+        default:
+          return prevDeals;
+      }
+    });
+
+    // Update myDeals if it includes this deal
+    setMyDeals((prevMyDeals) => {
+      if (!prevMyDeals.find((deal) => deal.id === dealId)) return prevMyDeals;
+
+      switch (updateType) {
+        case "deleted":
+          return prevMyDeals.filter((deal) => deal.id !== dealId);
+        default:
+          return prevMyDeals.map((deal) =>
+            deal.id === dealId ? { ...deal, ...dealData } : deal
+          );
+      }
+    });
+  }, []);
+
+  const handleBidUpdate = useCallback((data) => {
+    const { dealId, bidData, updateType } = data;
+
+    console.log("Real-time bid update:", updateType, bidData);
+
+    if (updateType === "created") {
+      setBids((prevBids) => {
+        // Check if bid already exists
+        if (!prevBids.find((bid) => bid.id === bidData.id)) {
+          return [...prevBids, bidData];
+        }
+        return prevBids;
+      });
+    } else if (updateType === "selected") {
+      // Bid selection update - may affect deal state
+      if (bidData.dealFinalized) {
+        // Update deals to show new dealmaker
+        setDeals((prevDeals) =>
+          prevDeals.map((deal) =>
+            deal.id === dealId
+              ? {
+                  ...deal,
+                  dealmaker: bidData.finalDealmaker,
+                  budget: bidData.finalPrice,
+                }
+              : deal
+          )
+        );
+
+        // Remove all bids for this deal since it's finalized
+        setBids((prevBids) => prevBids.filter((bid) => bid.dealId !== dealId));
+      }
+    }
+  }, []);
+
+  const handleDealmakerRequestUpdate = useCallback((data) => {
+    const { dealId, requestData, updateType } = data;
+
+    console.log("Real-time dealmaker request update:", updateType, requestData);
+
+    if (updateType === "accepted") {
+      // Update deal to show new dealmaker
+      setDeals((prevDeals) =>
+        prevDeals.map((deal) =>
+          deal.id === dealId
+            ? { ...deal, dealmaker: requestData.dealmaker }
+            : deal
+        )
+      );
+
+      setMyDeals((prevMyDeals) =>
+        prevMyDeals.map((deal) =>
+          deal.id === dealId
+            ? { ...deal, dealmaker: requestData.dealmaker }
+            : deal
+        )
+      );
+    }
+  }, []);
+
+  const handleNotification = useCallback((notification) => {
+    console.log("Real-time notification:", notification);
+    // You can show toast notifications or update UI here
+    setMessage(notification.message || "New update received");
+
+    // Auto-clear message after 3 seconds
+    setTimeout(() => setMessage(""), 3000);
+  }, []);
+
+  // Set up real-time WebSocket connection
+  useGlobalRealtime({
+    onDealUpdate: handleDealUpdate,
+    onBidUpdate: handleBidUpdate,
+    onDealmakerRequestUpdate: handleDealmakerRequestUpdate,
+    onNotification: handleNotification,
+  });
+
   useEffect(() => {
     const fetchUsername = async () => {
       try {
@@ -89,7 +217,13 @@ const DealsPage = () => {
       }
     };
 
-    loadDeals();
+    const loadData = async () => {
+      setLoading(true);
+      await loadDeals();
+      setLoading(false);
+    };
+
+    loadData();
     fetchUsername();
   }, []);
 
@@ -274,7 +408,19 @@ const DealsPage = () => {
   return (
     <div className="p-6 bg-gray-100 min-h-screen">
       <h1 className="text-3xl font-bold text-center mb-6">Deals</h1>
-      {message && <p className="text-center text-green-600 mb-4">{message}</p>}
+      <AnimatePresence>
+        {message && (
+          <motion.p
+            className="text-center text-green-600 mb-4 bg-green-50 border border-green-200 rounded-lg py-2 px-4"
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -10 }}
+            transition={{ duration: 0.3 }}
+          >
+            {message}
+          </motion.p>
+        )}
+      </AnimatePresence>
 
       <div className="flex justify-between items-center mb-6">
         <input
@@ -282,170 +428,199 @@ const DealsPage = () => {
           placeholder="Search by keyword"
           value={keyword}
           onChange={(e) => setKeyword(e.target.value)}
-          className="border border-gray-300 rounded-lg px-4 py-2 w-full max-w-md"
+          className="border border-gray-300 rounded-lg px-4 py-2 w-full max-w-md focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-300 hover:border-gray-400"
         />
         <button
           onClick={handleSearch}
-          className="ml-4 bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600"
+          className="ml-4 bg-blue-500 text-white px-6 py-2 rounded-lg hover:bg-blue-600 transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl"
         >
           Search
         </button>
         <button
           onClick={() => setIsCreateModalOpen(true)}
-          className="ml-4 bg-green-500 text-white px-4 py-2 rounded-lg hover:bg-green-600"
+          className="ml-4 bg-green-500 text-white px-4 py-2 rounded-lg hover:bg-green-600 hover:shadow-lg transition-all duration-300 transform hover:scale-105"
         >
           Create Deal
         </button>
         <button
           onClick={handleLoadMyDeals}
-          className="ml-4 bg-yellow-500 text-white px-4 py-2 rounded-lg hover:bg-yellow-600"
+          className="ml-4 bg-yellow-500 text-white px-6 py-2 rounded-lg hover:bg-yellow-600 hover:shadow-xl transition-all duration-300 transform hover:scale-105 shadow-lg"
         >
           My Deals
         </button>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {deals.map((deal) => (
-          <div key={deal.id} className="bg-white p-4 rounded-lg shadow-md">
-            <h3 className="text-xl font-semibold mb-2">{deal.title}</h3>
-            <p className="text-gray-700 mb-2">{deal.description}</p>
-            <p className="text-gray-500 mb-2">Budget: {deal.budget}</p>
-            <p className="text-gray-500 mb-4">Timeline: {deal.timeline}</p>
-            <p className="text-gray-500 mb-2">
-              Created by: {deal.dealer_creator}
-            </p>
-            <p className="text-gray-500 mb-4">
-              {deal.dealer_joined
-                ? `Joined by: ${deal.dealer_joined}`
-                : "No one has joined yet"}
-            </p>
-            <div className="flex items-center space-x-2 mt-4">
-              {(() => {
-                // User is not the creator
-                const userHasBid = bids.some(
-                  (bid) => bid.dealId === deal.id && bid.dealmaker === username
-                );
+      {loading ? (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          className="flex justify-center items-center py-12"
+        >
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
+          <span className="ml-3 text-gray-600">Loading deals...</span>
+        </motion.div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {deals.map((deal, index) => (
+            <motion.div
+              key={deal.id}
+              className="bg-white p-4 rounded-lg shadow-md hover:shadow-lg transition-all duration-300 transform hover:scale-105"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: index * 0.1, duration: 0.3 }}
+              whileHover={{ y: -5 }}
+            >
+              <h3 className="text-xl font-semibold mb-2">{deal.title}</h3>
+              <p className="text-gray-700 mb-2">{deal.description}</p>
+              <p className="text-gray-500 mb-2">Budget: {deal.budget}</p>
+              <p className="text-gray-500 mb-4">Timeline: {deal.timeline}</p>
+              <p className="text-gray-500 mb-2">
+                Created by: {deal.dealer_creator}
+              </p>
+              <p className="text-gray-500 mb-4">
+                {deal.dealer_joined
+                  ? `Joined by: ${deal.dealer_joined}`
+                  : "No one has joined yet"}
+              </p>
+              <div className="flex items-center space-x-2 mt-4">
+                {(() => {
+                  // User is not the creator
+                  const userHasBid = bids.some(
+                    (bid) =>
+                      bid.dealId === deal.id && bid.dealmaker === username
+                  );
 
-                // Check if escrow has been paid by anyone (makes deal undeleteable)
-                const escrowStatus = escrowStatuses[deal.id];
-                const hasEscrowPayment =
-                  escrowStatus &&
-                  (escrowStatus.creatorPaid || escrowStatus.counterpartPaid);
+                  // Check if escrow has been paid by anyone (makes deal undeleteable)
+                  const escrowStatus = escrowStatuses[deal.id];
+                  const hasEscrowPayment =
+                    escrowStatus &&
+                    (escrowStatus.creatorPaid || escrowStatus.counterpartPaid);
 
-                // Buttons for the deal creator
-                if (deal.dealer_creator === username) {
-                  // Don't show delete button if:
-                  // 1. Deal has a dealmaker but no escrow yet (payment option should be shown first)
-                  // 2. Anyone has made escrow payment (deal becomes protected)
-                  if (hasEscrowPayment) {
+                  // Buttons for the deal creator
+                  if (deal.dealer_creator === username) {
+                    // Don't show delete button if:
+                    // 1. Deal has a dealmaker but no escrow yet (payment option should be shown first)
+                    // 2. Anyone has made escrow payment (deal becomes protected)
+                    if (hasEscrowPayment) {
+                      return (
+                        <motion.span
+                          className="text-gray-500 italic bg-gray-100 px-3 py-1 rounded-full text-sm"
+                          initial={{ opacity: 0 }}
+                          animate={{ opacity: 1 }}
+                          transition={{ duration: 0.3 }}
+                        >
+                          🔒 Deal is protected - escrow payment made
+                        </motion.span>
+                      );
+                    }
+
                     return (
-                      <span className="text-gray-500 italic">
-                        Deal is protected - escrow payment made
-                      </span>
+                      <button
+                        onClick={() => handleDeleteDeal(deal.id)}
+                        className="bg-red-500 text-white px-4 py-2 rounded-lg hover:bg-red-600 hover:shadow-lg transition-all duration-300 transform hover:scale-105"
+                      >
+                        Delete Deal
+                      </button>
                     );
                   }
 
+                  // Buttons for other users
                   return (
-                    <button
-                      onClick={() => handleDeleteDeal(deal.id)}
-                      className="bg-red-500 text-white px-4 py-2 rounded-lg hover:bg-red-600"
-                    >
-                      Delete Deal
-                    </button>
-                  );
-                }
+                    <>
+                      {/* User has joined the deal */}
+                      {deal.dealer_joined === username && (
+                        <>
+                          {hasEscrowPayment ? (
+                            <motion.span
+                              className="text-gray-500 italic bg-gray-100 px-3 py-1 rounded-full text-sm"
+                              initial={{ opacity: 0 }}
+                              animate={{ opacity: 1 }}
+                              transition={{ duration: 0.3 }}
+                            >
+                              🔒 Cannot leave - escrow payment made
+                            </motion.span>
+                          ) : (
+                            <button
+                              onClick={() => handleLeaveDeal(deal.id)}
+                              className="bg-yellow-500 text-white px-4 py-2 rounded-lg hover:bg-yellow-600 hover:shadow-lg transition-all duration-300 transform hover:scale-105"
+                            >
+                              Leave Deal
+                            </button>
+                          )}
+                        </>
+                      )}
 
-                // Buttons for other users
-                return (
-                  <>
-                    {/* User has joined the deal */}
-                    {deal.dealer_joined === username && (
-                      <>
-                        {hasEscrowPayment ? (
-                          <span className="text-gray-500 italic">
-                            Cannot leave - escrow payment made
-                          </span>
-                        ) : (
+                      {/* User has not joined and no one else has joined */}
+                      {!deal.dealer_joined &&
+                        deal.dealer_creator !== username && (
                           <button
-                            onClick={() => handleLeaveDeal(deal.id)}
-                            className="bg-yellow-500 text-white px-4 py-2 rounded-lg hover:bg-yellow-600"
+                            onClick={() => handleJoinDeal(deal.id)}
+                            className="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 hover:shadow-lg transition-all duration-300 transform hover:scale-105"
                           >
-                            Leave Deal
+                            Join Deal
                           </button>
                         )}
-                      </>
-                    )}
 
-                    {/* User has not joined and no one else has joined */}
-                    {!deal.dealer_joined &&
-                      deal.dealer_creator !== username && (
-                        <button
-                          onClick={() => handleJoinDeal(deal.id)}
-                          className="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600"
-                        >
-                          Join Deal
-                        </button>
+                      {/* User can bid if they are not the creator or the joined dealer AND the deal is not finalized */}
+                      {!deal.dealmaker &&
+                        deal.dealer_creator !== username &&
+                        deal.dealer_joined !== username &&
+                        !userHasBid && (
+                          <button
+                            onClick={() => {
+                              setIsBidModalOpen(true);
+                              setSelectedDealId(deal.id);
+                              setCurrentBid(null);
+                              setBidPrice("");
+                            }}
+                            className="bg-green-500 text-white px-4 py-2 rounded-lg hover:bg-green-600 hover:shadow-lg transition-all duration-300 transform hover:scale-105"
+                          >
+                            Bid as Dealmaker
+                          </button>
+                        )}
+
+                      {/* User has an existing bid */}
+                      {userHasBid && (
+                        <>
+                          <button
+                            onClick={() => {
+                              const userBid = bids.find(
+                                (bid) =>
+                                  bid.dealId === deal.id &&
+                                  bid.dealmaker === username
+                              );
+                              setIsBidModalOpen(true);
+                              setSelectedDealId(deal.id);
+                              setCurrentBid(userBid);
+                              setBidPrice(userBid.price);
+                            }}
+                            className="bg-purple-500 text-white px-4 py-2 rounded-lg hover:bg-purple-600"
+                          >
+                            Update Bid
+                          </button>
+                          <button
+                            onClick={() => {
+                              const userBid = bids.find(
+                                (bid) =>
+                                  bid.dealId === deal.id &&
+                                  bid.dealmaker === username
+                              );
+                              handleDeleteBid(userBid.id);
+                            }}
+                            className="bg-red-700 text-white px-4 py-2 rounded-lg hover:bg-red-800"
+                          >
+                            Delete Bid
+                          </button>
+                        </>
                       )}
-
-                    {/* User can bid if they are not the creator or the joined dealer AND the deal is not finalized */}
-                    {!deal.dealmaker &&
-                      deal.dealer_creator !== username &&
-                      deal.dealer_joined !== username &&
-                      !userHasBid && (
-                        <button
-                          onClick={() => {
-                            setIsBidModalOpen(true);
-                            setSelectedDealId(deal.id);
-                            setCurrentBid(null);
-                            setBidPrice("");
-                          }}
-                          className="bg-green-500 text-white px-4 py-2 rounded-lg hover:bg-green-600"
-                        >
-                          Bid as Dealmaker
-                        </button>
-                      )}
-
-                    {/* User has an existing bid */}
-                    {userHasBid && (
-                      <>
-                        <button
-                          onClick={() => {
-                            const userBid = bids.find(
-                              (bid) =>
-                                bid.dealId === deal.id &&
-                                bid.dealmaker === username
-                            );
-                            setIsBidModalOpen(true);
-                            setSelectedDealId(deal.id);
-                            setCurrentBid(userBid);
-                            setBidPrice(userBid.price);
-                          }}
-                          className="bg-purple-500 text-white px-4 py-2 rounded-lg hover:bg-purple-600"
-                        >
-                          Update Bid
-                        </button>
-                        <button
-                          onClick={() => {
-                            const userBid = bids.find(
-                              (bid) =>
-                                bid.dealId === deal.id &&
-                                bid.dealmaker === username
-                            );
-                            handleDeleteBid(userBid.id);
-                          }}
-                          className="bg-red-700 text-white px-4 py-2 rounded-lg hover:bg-red-800"
-                        >
-                          Delete Bid
-                        </button>
-                      </>
-                    )}
-                  </>
-                );
-              })()}
-            </div>
-          </div>
-        ))}
-      </div>
+                    </>
+                  );
+                })()}
+              </div>
+            </motion.div>
+          ))}
+        </div>
+      )}
 
       <AnimatePresence>
         {isCreateModalOpen && (
@@ -473,7 +648,7 @@ const DealsPage = () => {
                     setNewDeal({ ...newDeal, title: e.target.value })
                   }
                   required
-                  className="border border-gray-300 rounded-lg px-4 py-2 w-full mb-4"
+                  className="border border-gray-300 rounded-lg px-4 py-2 w-full mb-4 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-300 hover:border-gray-400"
                 />
                 <textarea
                   placeholder="Description"
@@ -482,7 +657,7 @@ const DealsPage = () => {
                     setNewDeal({ ...newDeal, description: e.target.value })
                   }
                   required
-                  className="border border-gray-300 rounded-lg px-4 py-2 w-full mb-4"
+                  className="border border-gray-300 rounded-lg px-4 py-2 w-full mb-4 h-24 resize-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-300 hover:border-gray-400"
                 ></textarea>
                 <input
                   type="number"
@@ -492,7 +667,7 @@ const DealsPage = () => {
                     setNewDeal({ ...newDeal, budget: e.target.value })
                   }
                   required
-                  className="border border-gray-300 rounded-lg px-4 py-2 w-full mb-4"
+                  className="border border-gray-300 rounded-lg px-4 py-2 w-full mb-4 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-300 hover:border-gray-400"
                 />
                 <input
                   type="text"
@@ -502,21 +677,21 @@ const DealsPage = () => {
                     setNewDeal({ ...newDeal, timeline: e.target.value })
                   }
                   required
-                  className="border border-gray-300 rounded-lg px-4 py-2 w-full mb-4"
+                  className="border border-gray-300 rounded-lg px-4 py-2 w-full mb-4 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-300 hover:border-gray-400"
                 />
                 <div className="flex justify-end">
                   <button
                     type="button"
                     onClick={() => setIsCreateModalOpen(false)}
-                    className="bg-gray-300 text-gray-700 px-4 py-2 rounded-lg mr-2 hover:bg-gray-400"
+                    className="bg-gray-300 text-gray-700 px-6 py-2 rounded-lg mr-2 hover:bg-gray-400 transition-all duration-300 transform hover:scale-105"
                   >
                     Cancel
                   </button>
                   <button
                     type="submit"
-                    className="bg-green-500 text-white px-4 py-2 rounded-lg hover:bg-green-600"
+                    className="bg-green-500 text-white px-6 py-2 rounded-lg hover:bg-green-600 transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl"
                   >
-                    Create
+                    Create Deal
                   </button>
                 </div>
               </form>

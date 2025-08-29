@@ -1,6 +1,7 @@
 import { RequestDealmaker } from "../models/requestDealmakerModel.js";
 import dealModel from "../../deals/models/dealsModel.js";
 import { db_connection } from "../../../../config/db_connection.js";
+import socketService from "../../../utils/socketService.js";
 
 export const acceptDealRequestController = async (req, res) => {
   const { requestId } = req.params;
@@ -42,6 +43,25 @@ export const acceptDealRequestController = async (req, res) => {
 
     // 5. Commit the transaction
     await t.commit();
+
+    // 6. Get updated deal data and broadcast real-time update
+    const updatedDeal = await dealModel.findByPk(dealId);
+    socketService.broadcastDealmakerRequestUpdate(
+      dealId,
+      {
+        dealmaker: loggedInUser,
+        requestAccepted: true,
+        acceptedBy: loggedInUser,
+      },
+      "accepted"
+    );
+
+    // Also broadcast deal update since dealmaker was assigned
+    socketService.broadcastDealUpdate(
+      dealId,
+      updatedDeal,
+      "dealmaker-assigned"
+    );
 
     res.status(200).json({ message: "Request accepted successfully." });
   } catch (error) {

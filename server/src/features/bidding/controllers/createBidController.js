@@ -1,5 +1,6 @@
 import biddingModel from "../model/biddingModels.js";
 import dealModel from "../../deals/models/dealsModel.js";
+import socketService from "../../../utils/socketService.js";
 
 export const createBid = async (req, res) => {
   try {
@@ -22,6 +23,10 @@ export const createBid = async (req, res) => {
     }
 
     const newBid = await biddingModel.create({ dealId, dealmaker, price });
+
+    // Broadcast real-time update
+    socketService.broadcastBidUpdate(dealId, newBid, "created");
+
     res.status(201).json(newBid);
   } catch (error) {
     console.error("Error creating bid:", error);

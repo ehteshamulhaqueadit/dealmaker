@@ -14,17 +14,14 @@ const server = createServer(app);
 // Initialize Socket.IO
 const io = new Server(server, {
   cors: {
-    origin: [
-      "http://localhost:5173",
-      "http://localhost",
-      "http://localhost:80",
-      "http://localhost:3000",
-      "http://localhost:8000",
-    ],
-    methods: ["GET", "POST"],
+    origin: (origin, callback) => {
+      callback(null, origin); // Reflect the origin dynamically
+    },
+    methods: ["GET", "POST", "PUT", "DELETE"],
     credentials: true,
   },
 });
+
 
 // Initialize socket service
 socketService.initialize(io);

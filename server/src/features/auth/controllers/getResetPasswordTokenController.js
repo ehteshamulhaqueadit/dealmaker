@@ -14,10 +14,12 @@ async function send_reset_password_token(username) {
       { password_reset_token: token },
       { where: { username }, transaction }
     );
-    const user_email = await userModel.findByPk(username, {
+    const user_email = await userModel.findOne({
+      where: { username },
       attributes: ["email"],
       transaction,
     });
+
     const reset_password_url = `${process.env.DOMAIN}/api/auth/reset_password/${username}/${token}`;
     const email_response = await sendMail(
       user_email.email,

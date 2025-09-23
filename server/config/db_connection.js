@@ -11,6 +11,12 @@ const db_connection = new sequalize.Sequelize(
     dialect: process.env.DB_DIALECT || "postgres", // Default to PostgreSQL
     port: process.env.DB_PORT || 5432, // Default PostgreSQL port
     logging: false, // Disable logging for cleaner output
+    dialectOptions: {
+      ssl: {
+        require: true,
+        rejectUnauthorized: false, // Render uses self-signed certs
+      },
+    },
   }
 );
 

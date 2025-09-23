@@ -22,7 +22,6 @@ const io = new Server(server, {
   },
 });
 
-
 // Initialize socket service
 socketService.initialize(io);
 
@@ -46,6 +45,30 @@ io.on("connection", (socket) => {
   socket.on("leave-deal-room", (dealId) => {
     socket.leave(`deal-${dealId}`);
     console.log(`User ${socket.id} left deal room: deal-${dealId}`);
+  });
+
+  // Handle typing start events
+  socket.on("user-typing-start", ({ dealId, userInfo }) => {
+    console.log(`User ${userInfo.username} started typing in deal ${dealId}`);
+    // Broadcast to all users in the deal room except the sender
+    socket.to(`deal-${dealId}`).emit("typing-updated", {
+      dealId,
+      userInfo,
+      isTyping: true,
+      timestamp: new Date(),
+    });
+  });
+
+  // Handle typing stop events
+  socket.on("user-typing-stop", ({ dealId, userInfo }) => {
+    console.log(`User ${userInfo.username} stopped typing in deal ${dealId}`);
+    // Broadcast to all users in the deal room except the sender
+    socket.to(`deal-${dealId}`).emit("typing-updated", {
+      dealId,
+      userInfo,
+      isTyping: false,
+      timestamp: new Date(),
+    });
   });
 
   socket.on("disconnect", () => {

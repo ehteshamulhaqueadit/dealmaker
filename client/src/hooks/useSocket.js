@@ -42,6 +42,10 @@ export const useDealRealtime = (dealId, callbacks = {}) => {
       socket.onMessageUpdate(callbacks.onMessageUpdate);
     }
 
+    if (callbacks.onTypingUpdate) {
+      socket.onTypingUpdate(callbacks.onTypingUpdate);
+    }
+
     // Cleanup
     return () => {
       socket.leaveDealRoom(dealId);

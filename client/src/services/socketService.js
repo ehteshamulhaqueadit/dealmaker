@@ -116,6 +116,34 @@ class SocketService {
     }
   }
 
+  // Emit typing start event
+  startTyping(dealId, userInfo) {
+    if (this.socket && this.connected) {
+      console.log("Emitting user-typing-start:", { dealId, userInfo });
+      this.socket.emit("user-typing-start", { dealId, userInfo });
+    } else {
+      console.log("Cannot emit typing start - socket not connected");
+    }
+  }
+
+  // Emit typing stop event
+  stopTyping(dealId, userInfo) {
+    if (this.socket && this.connected) {
+      console.log("Emitting user-typing-stop:", { dealId, userInfo });
+      this.socket.emit("user-typing-stop", { dealId, userInfo });
+    } else {
+      console.log("Cannot emit typing stop - socket not connected");
+    }
+  }
+
+  // Listen for typing updates
+  onTypingUpdate(callback) {
+    if (this.socket) {
+      this.socket.on("typing-updated", callback);
+      this.listeners.set("typing-updated", callback);
+    }
+  }
+
   // Listen for notifications
   onNotification(callback) {
     if (this.socket) {

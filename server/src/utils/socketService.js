@@ -145,6 +145,18 @@ class SocketService {
   joinDealRoom(socket, dealId) {
     socket.join(`deal-${dealId}`);
   }
+
+  // Broadcast typing updates to deal room
+  broadcastTypingUpdate(dealId, userInfo, isTyping) {
+    if (this.io) {
+      this.io.to(`deal-${dealId}`).emit("typing-updated", {
+        dealId,
+        userInfo,
+        isTyping,
+        timestamp: new Date(),
+      });
+    }
+  }
 }
 
 export default new SocketService();

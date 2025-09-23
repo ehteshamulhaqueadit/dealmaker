@@ -14,6 +14,7 @@ import UserDetailPage from "./pages/UserDetailPage";
 import ResetPassword from "./pages/ResetPassword"; // Import ResetPassword page
 import HomePage from "./pages/HomePage"; // Import HomePage
 import AboutPage from "./pages/AboutPage"; // Import AboutPage
+import NotFoundPage from "./pages/NotFoundPage"; // Import 404 page
 import SocketProvider from "./contexts/SocketProvider";
 import { AuthProvider } from "./contexts/AuthContext";
 
@@ -125,6 +126,8 @@ export default function App() {
                 </main>
               }
             />
+            {/* Catch-all route for 404 pages */}
+            <Route path="*" element={<NotFoundPage />} />
           </Routes>
           <AnimatePresence>
             {authModal.open && (

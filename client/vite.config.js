@@ -9,6 +9,20 @@ export default defineConfig({
     strictPort: true, // Optional: prevents fallback to another port
     historyApiFallback: true, // Ensure React Router works with frontend routes
   },
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks: undefined,
+      },
+    },
+  },
+  preview: {
+    port: 4173,
+    strictPort: true,
+    host: true,
+    // This is important for SPA routing in preview mode
+    historyApiFallback: true,
+  },
   css: {
     postcss: "./postcss.config.js",
   },

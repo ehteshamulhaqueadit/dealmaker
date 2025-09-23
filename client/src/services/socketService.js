@@ -13,7 +13,9 @@ class SocketService {
       return this.socket;
     }
 
-    this.socket = io("http://localhost:8000", {
+    const socketUrl = import.meta.env.VITE_API_URL || "http://localhost:8000";
+
+    this.socket = io(socketUrl, {
       autoConnect: true,
       reconnection: true,
       reconnectionAttempts: 5,

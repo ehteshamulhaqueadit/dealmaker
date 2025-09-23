@@ -14,7 +14,7 @@ export async function register(data) {
 
 // Confirm email
 export async function confirmEmail(token) {
-  const response = await axios.post("/auth/register/" + token);
+  const response = await axios.get("/auth/register/" + token);
   return response.data;
 }
 

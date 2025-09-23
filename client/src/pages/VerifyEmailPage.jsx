@@ -2,6 +2,8 @@
 import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 
+import { confirmEmail } from "../api/auth";
+
 export default function VerifyEmailPage() {
   const { key } = useParams();
   const [status, setStatus] = useState("loading"); // "loading" | "success" | "error"
@@ -10,30 +12,37 @@ export default function VerifyEmailPage() {
   useEffect(() => {
     const verifyEmail = async () => {
       try {
-        const res = await fetch(
-          `http://localhost:8000/api/auth/register/${key}`,
-          {
-            method: "GET", // or "POST" if your backend expects that
-            headers: { "Content-Type": "application/json" },
-          }
-        );
+        console.log("Verifying email with key:", key);
+        const data = await confirmEmail(key);
+        console.log("Response from server:", data);
 
-        if (!res.ok) {
-          throw new Error("Failed to verify email");
-        }
-
-        const data = await res.json();
         setStatus("success");
         setMessage(
           data.message || "Your email has been verified successfully!"
         );
       } catch (err) {
+        console.error("Email verification error:", err);
         setStatus("error");
-        setMessage("Verification failed. The link may be invalid or expired.");
+
+        // Handle different error types
+        if (err.response?.data?.message) {
+          setMessage(err.response.data.message);
+        } else if (err.message) {
+          setMessage(err.message);
+        } else {
+          setMessage(
+            "Verification failed. The link may be invalid or expired."
+          );
+        }
       }
     };
 
-    verifyEmail();
+    if (key) {
+      verifyEmail();
+    } else {
+      setStatus("error");
+      setMessage("Invalid verification link - missing token.");
+    }
   }, [key]);
 
   return (

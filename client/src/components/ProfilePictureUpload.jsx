@@ -90,7 +90,9 @@ const ProfilePictureUpload = ({
         return currentPicture;
       }
       // Otherwise, construct the full URL with the server address
-      return `http://localhost:8000${currentPicture}`;
+      return `${
+        import.meta.env.VITE_API_URL || "http://localhost:8000"
+      }${currentPicture}`;
     }
     return null;
   };

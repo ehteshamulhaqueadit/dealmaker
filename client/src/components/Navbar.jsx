@@ -74,7 +74,10 @@ export default function Navbar({ onAuthButtonClick }) {
                   <div className="w-8 h-8 rounded-full overflow-hidden bg-gray-200 flex items-center justify-center">
                     {user?.profile?.profile_picture ? (
                       <img
-                        src={`http://localhost:8000${user.profile.profile_picture}`}
+                        src={`${
+                          import.meta.env.VITE_API_URL ||
+                          "http://localhost:8000"
+                        }${user.profile.profile_picture}`}
                         alt={`${user?.username}'s profile`}
                         className="w-full h-full object-cover"
                       />
@@ -189,7 +192,10 @@ export default function Navbar({ onAuthButtonClick }) {
                       <div className="w-8 h-8 rounded-full overflow-hidden bg-gray-200 flex items-center justify-center">
                         {user?.profile?.profile_picture ? (
                           <img
-                            src={`http://localhost:8000${user.profile.profile_picture}`}
+                            src={`${
+                              import.meta.env.VITE_API_URL ||
+                              "http://localhost:8000"
+                            }${user.profile.profile_picture}`}
                             alt={`${user?.username}'s profile`}
                             className="w-full h-full object-cover"
                           />

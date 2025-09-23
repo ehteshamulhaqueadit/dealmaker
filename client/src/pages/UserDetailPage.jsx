@@ -141,7 +141,9 @@ const UserDetailPage = () => {
           <div className="w-20 h-20 rounded-full overflow-hidden bg-indigo-100 flex items-center justify-center border-4 border-indigo-200">
             {user.profile?.profile_picture ? (
               <img
-                src={`http://localhost:8000${user.profile.profile_picture}`}
+                src={`${
+                  import.meta.env.VITE_API_URL || "http://localhost:8000"
+                }${user.profile.profile_picture}`}
                 alt={`${user.username}'s profile`}
                 className="w-full h-full object-cover"
               />

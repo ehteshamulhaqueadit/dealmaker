@@ -167,7 +167,7 @@ cd server
 npm install
 
 # Create .env file with your configuration (see Environment Variables section)
-cp .env.example .env
+
 # Edit .env with your actual values
 
 # Start development server

@@ -1,6 +1,6 @@
 # Dealmaker - Modern Deal Management Platform
 
-![Dealmaker](https://img.shields.io/badge/Status-Live-brightgreen) ![React](https://img.shields.io/badge/React-19.1.1-blue) ![Node.js](https://img.shields.io/badge/Node.js-Latest-green) ![PostgreSQL](https://img.shields.io/badge/PostgreSQL-Database-blue)
+[![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0) ![Dealmaker](https://img.shields.io/badge/Status-Live-brightgreen) ![React](https://img.shields.io/badge/React-19.1.1-blue) ![Node.js](https://img.shields.io/badge/Node.js-Latest-green) ![PostgreSQL](https://img.shields.io/badge/PostgreSQL-Database-blue)
 
 **Live Demo:** [https://dealmaker-client.netlify.app/](https://dealmaker-client.netlify.app/)
 

@@ -1,18 +1,22 @@
 import app from "./app.js";
 import dotenv from "dotenv";
-import { createServer } from "http";
+import https from "https";
+import fs from "fs";
 import { Server } from "socket.io";
 import socketService from "./utils/socketService.js";
 
 dotenv.config();
 
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 8000;
 
-// Create HTTP server
-const server = createServer(app);
+// Create HTTPS server with your SSL certificates
+const httpsServer = https.createServer({
+  key: fs.readFileSync("privkey.pem"),
+  cert: fs.readFileSync("fullchain.pem"),
+}, app);
 
-// Initialize Socket.IO
-const io = new Server(server, {
+// Initialize Socket.IO on the HTTPS server
+const io = new Server(httpsServer, {
   cors: {
     origin: (origin, callback) => {
       callback(null, origin); // Reflect the origin dynamically
@@ -21,7 +25,6 @@ const io = new Server(server, {
     credentials: true,
   },
 });
-
 
 // Initialize socket service
 socketService.initialize(io);
@@ -56,6 +59,7 @@ io.on("connection", (socket) => {
 // Make io available globally for other modules
 app.set("io", io);
 
-server.listen(PORT, () => {
-  console.log(`Server is running on port ${PORT}`);
+// Start HTTPS server with Socket.IO attached
+httpsServer.listen(PORT, "0.0.0.0", () => {
+  console.log(`HTTPS + Socket.IO server running on port ${PORT}`);
 });
